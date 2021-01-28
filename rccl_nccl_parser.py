@@ -3,8 +3,15 @@ import sys
 import argparse
 
 coll_op_map = {
-            "AllReduce": "all_reduce_perf",
             "Broadcast": "broadcast_perf",
+            "Reduce": "reduce_perf",
+            "AllGather": "all_gather_perf",
+            "ReduceScatter": "reduce_scatter_perf",
+            "AllReduce": "all_reduce_perf",
+            "Gather": "gather_perf",
+            "Scatter": "scatter_perf",
+            "AllToAll": "alltoall_perf",
+            "AllToAllv": "alltoallv_perf",
           }
 
 reduction_op_map = {
