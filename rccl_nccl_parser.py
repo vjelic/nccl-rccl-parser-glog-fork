@@ -82,7 +82,7 @@ def parse_nccl_log(nccl_lines):
                        " -b " + str(total_bytes) + " -e " + str(total_bytes) + \
                        " -o " + reduction_op_map[op_type] + " -g " + str(nnranks)
         #print (test_cmd)
-        commands.append(test_cmd)
+        commands.append((test_cmd, int(nnranks)))
 
     return commands
 
@@ -105,28 +105,36 @@ def dump_counts_map(counts_map, output_file):
     fs.close()
     print ("INFO: Done dumping the count map of each command.")
 
-def get_unique_commands(commands):
+def get_unique_commands(commands_and_nranks):
     unique_values = []
     counts_map = {}
-    for j in range(len(commands)):
-        cmd = commands[j]
+    nranks_map = {}
+    for c_and_nr in commands_and_nranks:
+        cmd = c_and_nr[0]
+        nranks = c_and_nr[1]
         if (cmd not in unique_values):
             counts_map[cmd] = 1
+            nranks_map[cmd] = nranks
             unique_values.append(cmd)
         else:
             counts_map[cmd] = counts_map[cmd] + 1
+    assert len(counts_map) == len(nranks_map)
+    for cmd in counts_map.keys():
+        assert counts_map[cmd] % nranks_map[cmd] == 0
+        counts_map[cmd] = int(counts_map[cmd] / nranks_map[cmd])
     return unique_values, counts_map
 
 def main():
     log_file = os.path.abspath(args.nccl_debug_log)
     nccl_lines = get_useful_info(log_file)
-    commands = parse_nccl_log(nccl_lines)
+    commands_and_nranks = parse_nccl_log(nccl_lines)
     #generate_script(commands, args.output_script_name)
     if (args.unique):
-        new_commands, counts_map = get_unique_commands(commands)
+        new_commands, counts_map = get_unique_commands(commands_and_nranks)
         generate_script(new_commands, args.output_script_name + "_unique")
         dump_counts_map(counts_map, args.output_script_name + "_counts")
     else:
+        commands = list(zip(*commands_and_nranks))[0]
         generate_script(commands, args.output_script_name)
 
 if __name__ == '__main__':
