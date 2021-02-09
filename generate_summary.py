@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import re
 
 def get_script_commands(script_file):
     fs = open(script_file, 'r')
@@ -35,18 +36,37 @@ def parse_nccl_performance(useful_lines, commands):
     
     perf_lines = []
     perf_lines.append("sep=|")
-    perf_lines.append("size|count|type|redop|time-oplace(us)|algbw(gb/s)-oplace|busbw(gb/s)-oplace|error|" + \
-                        "time-iplace(us)|algbw(gb/s)-iplace|busbw(gb/s)-iplace|error|avg_bus_bw|commands")
+    header = "size|count|type|redop|root|time-oplace(us)|algbw(gb/s)-oplace|busbw(gb/s)-oplace|error|" + \
+             "time-iplace(us)|algbw(gb/s)-iplace|busbw(gb/s)-iplace|error|avg_bus_bw|commands"
+    #print(header)
+    num_fields = len(header.split("|"))
+    perf_lines.append(header)
     for j in range(len(useful_lines)):
         line = useful_lines[j]
         line = line.replace("# Avg bus bandwidth    : ", "")
         
         split_list = line.split()
         perf_line = ""
+        field_index = 0
         for i in range(len(split_list)):
             perf_line = perf_line + split_list[i] + "|"
+            # Some collectives do not involve a redop
+            if field_index==2 and "reduce" not in commands[j].lower():
+                perf_line = perf_line + "|"
+                field_index = field_index + 1
+            # Only broadcast and reduce involve a root
+            if (
+               field_index==3 and
+               re.search(r'\Wreduce_perf', commands[j]) is None and
+               re.search(r'\Wbroadcast_perf', commands[j]) is None
+            ):
+                perf_line = perf_line + "|"
+                field_index = field_index + 1
+            field_index = field_index + 1
         #print (perf_line + commands[j])
-        perf_lines.append(perf_line + commands[j])
+        perf_line = perf_line + commands[j]
+        assert len(perf_line.split("|")) == num_fields
+        perf_lines.append(perf_line)
 
     return perf_lines
 
