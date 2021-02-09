@@ -17,14 +17,14 @@ def main():
         os.system("cp net_unique.sh " + rccl_tests_path)
         #os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "rccl-tests"))
         os.chdir(rccl_tests_path)
-        os.system("cd rccl-tests")
-        if os.system("./install.sh"):
+        if os.system("./install.sh > /dev/null 2>&1"):
             print("ERROR: Failed to install rccl-tests.")
             sys.exit(1)
         
+        os.system("cat net_unique.sh")
         run_script_cmd = "sh net_unique.sh | tee rccl_perf_log.txt"
         if os.system(run_script_cmd):
-            print ("ERROR: Unalbe to run rccl-tests properly.")
+            print ("ERROR: Unable to run rccl-tests properly.")
             sys.exit(1)
         os.system("mv rccl_perf_log.txt ../")
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
@@ -38,16 +38,16 @@ def main():
         nccl_tests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "nccl-tests")
         os.system("cp net_unique.sh " + nccl_tests_path)
         os.chdir(nccl_tests_path)
-        if os.system("make"):
+        if os.system("make > /dev/null 2>&1"):
             print ("ERROR: Failed to install nccl-unit tests")
             sys.exit(1)
         
+        os.system("cat net_unique.sh")
         run_script_cmd = "sh net_unique.sh | tee nccl_perf_log.txt"
         if os.system(run_script_cmd):
             print ("ERROR: unable to run nccl-tests")
             sys.exit(1)
         os.system("mv nccl_perf_log.txt ../")
-        #os.system("cd ../")
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
         
         summary_cmd = "python generate_summary.py --log-file nccl_perf_log.txt --script-file net_unique.sh --output-file-name nv_net_summary --count-file net_counts.csv"

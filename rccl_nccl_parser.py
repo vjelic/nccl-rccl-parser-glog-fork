@@ -87,15 +87,17 @@ def parse_nccl_log(nccl_lines):
     return commands
 
 def generate_script(commands, output_script):
-    fs = open(output_script + ".sh", "w")
+    filename = output_script + ".sh"
+    fs = open(filename, "w")
     for j in range(len(commands)):
         fs.write(commands[j])
         fs.write("\n")
     fs.close()
-    print("INFO: Dumped out the commands in a script named: {}".format(output_script))
+    print("INFO: Dumped out the commands in a script named: {}".format(filename))
 
 def dump_counts_map(counts_map, output_file):
-    fs = open(output_file + ".csv", 'w')
+    filename = output_file + ".csv"
+    fs = open(filename, 'w')
     fs.write("sep=|")
     fs.write("\n")
     keys = counts_map.keys()
@@ -103,7 +105,7 @@ def dump_counts_map(counts_map, output_file):
         fs.write(key + "|" + str(counts_map[key]))
         fs.write("\n")
     fs.close()
-    print ("INFO: Done dumping the count map of each command.")
+    print ("INFO: Dumped out the count of each command in a file named: {}".format(filename))
 
 def get_unique_commands(commands_and_nranks):
     unique_values = []
