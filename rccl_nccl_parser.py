@@ -3,8 +3,17 @@ import sys
 import argparse
 
 coll_op_map = {
-            "AllReduce": "all_reduce_perf",
             "Broadcast": "broadcast_perf",
+            "Reduce": "reduce_perf",
+            "AllGather": "all_gather_perf",
+            "ReduceScatter": "reduce_scatter_perf",
+            "AllReduce": "all_reduce_perf",
+            "Gather": "gather_perf",
+            "Scatter": "scatter_perf",
+            "AllToAll": "alltoall_perf",
+#            "AllToAllv": "alltoallv_perf",
+            "Send": "sendrecv_perf",
+            "Recv": "sendrecv_perf",
           }
 
 reduction_op_map = {
@@ -62,12 +71,12 @@ def parse_nccl_log(nccl_lines):
     for j in range(len(nccl_lines)):
         line = nccl_lines[j]
         split_list = line.split(" ")
-        comm = split_list[4].replace(":", "")
-        count = split_list[12]
-        datatype = split_list[14]
-        op_type = split_list[16]
-        root = split_list[18]
-        nnranks = split_list[21].split("=")[1].replace("]", "")
+        comm = split_list[split_list.index("INFO") + 1].replace(":", "")
+        count = split_list[split_list.index("count") + 1]
+        datatype = split_list[split_list.index("datatype") + 1]
+        op_type = split_list[split_list.index("op") + 1]
+        root = split_list[split_list.index("root") + 1]
+        nnranks = next(item for item in split_list if 'nranks' in item).split("=")[1].replace("]", "")
 
         #print (comm)
         #print (count)
