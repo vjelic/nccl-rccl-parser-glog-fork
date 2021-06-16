@@ -135,6 +135,45 @@ def get_unique_commands(commands_and_nranks):
         counts_map[cmd] = int(counts_map[cmd] / nranks_map[cmd])
     return unique_values, counts_map
 
+def get_topo_info(log_file):
+    fs = open(log_file, 'r')
+    lines = fs.readlines()
+    fs.close()
+
+    useful_lines = []
+    found = False
+    j = 0
+    
+    while j < len(lines):
+        line = lines[j].rstrip()
+        if ("=== System : maxWidth" in line and found == False):
+            topo_lines = []
+            found = True
+        elif(found):
+            if ("Pattern" in line or "search.cc" in line):
+                useful_lines.append(topo_lines)
+                found = False
+            elif ("=== System : maxWidth" in line):
+                useful_lines.append(topo_lines)
+                topo_lines = []
+            else:
+                topo_lines.append(line)
+        j += 1
+    return useful_lines
+
+def generate_topo_script(commands, topo_info, output_script):
+    filename = output_script + ".sh"
+    fs = open(filename, "w")
+    for j in range(len(commands)):
+        fs.write(commands[j])
+        fs.write("\n :' \n")
+        for line in topo_info[j]:
+            fs.write(line)
+            fs.write("\n")
+        fs.write("' \n")
+    fs.close()
+    print("INFO: Dumped out the commands in a script named: {}".format(filename))
+
 def main():
     log_file = os.path.abspath(args.nccl_debug_log)
     nccl_lines = get_useful_info(log_file)
@@ -144,6 +183,9 @@ def main():
         new_commands, counts_map = get_unique_commands(commands_and_nranks)
         generate_script(new_commands, args.output_script_name + "_unique")
         dump_counts_map(counts_map, args.output_script_name + "_counts")
+        if (args.topology):
+            topo_info = get_topo_info(log_file)
+            generate_topo_script(new_commands, topo_info, args.output_script_name + "_unique_topo")
     else:
         commands = list(zip(*commands_and_nranks))[0]
         generate_script(commands, args.output_script_name)
@@ -153,6 +195,6 @@ if __name__ == '__main__':
     parser.add_argument("--nccl-debug-log", type=str, required=True, help="Log from app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL")
     parser.add_argument("--output-script-name", type=str, required=False, default="net_nccl_rccl", help="Output command script")
     parser.add_argument("--unique", action="store_true", default=False, help="Get only the unique commands.")
-
+    parser.add_argument("--topology", action="store_true", default=False, help="Must be used with --unique to output topology info as comments in command script.")
     args = parser.parse_args()
     main()
