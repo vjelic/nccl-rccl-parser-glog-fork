@@ -95,3 +95,16 @@ python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-n
 ```
 For example, the output file for [DeepSpeed Megatron-LM GPT2 model pretraining](https://confluence.amd.com/display/~jnair/DeepSpeed+on+PyTorch) with 4way parallelism on a 8-GPU ROCm system can be found [here](net_unique_topo.sh). Notice that the commands and topology info are not matching. The problem is still being investigated.
 
+### Topology Visualizer
+[Ref](https://github.com/ROCmSoftwarePlatform/rccl/tree/develop/tools/TopoVisual)
+```
+chmod +x TopoVisual/filename.sh
+./TopoVisual/filename.sh
+```
+```
+HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL,GRAPH <application> |& tee nccl_debug_log.txt
+```
+```
+sudo ./TopoVisual/topo_visual.sh -i nccl_debug_log.txt
+```
+The output file can be found [here](nccl_debug_log_4_way.png).
