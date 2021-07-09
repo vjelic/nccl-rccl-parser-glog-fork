@@ -38,12 +38,14 @@ Number of HIP visible devices is '8'.
 7 (rocm-smi GPU ID) ==> 0000:83:00.0 ---> 7 (HIP Device index) ---> 536576 (PCI Bus ID in INT64)
 ```
 
-As the results shown above, we confirmed that the device indices on HIP and ROCM-SMI are identical when there is no HIP_VISIBLE_DEVICES used.
+As the results shown above, we confirmed that the device (enumeration) indices on HIP and ROCM-SMI are identical when there is no HIP_VISIBLE_DEVICES used.
 
 
-When HIP_VISIBLE_DEVICES is used, the indices will not match for HIP and ROCM-SMI. The following outputs are from
+When [HIP_VISIBLE_DEVICES](https://rocmdocs.amd.com/en/latest/Other_Solutions/Other-Solutions.html?highlight=HIP_VISIBLE_DEVICES#hip-environment-variables) or [ROCR_VISIBLE_DEVICES](https://rocmdocs.amd.com/en/latest/ROCm_System_Managment/ROCm-System-Managment.html?highlight=ROCR_VISIBLE_DEVICES#rocr-visible-devices) is used, the indices will not match for HIP and ROCM-SMI. The following outputs are from
 ```
 HIP_VISIBLE_DEVICES=0,3,7 ./hip_rocm_smi_mapping
+or
+ROCR_VISIBLE_DEVICES=0,3,7 ./hip_rocm_smi_mapping
 ```
 ```
 Number of HIP visible devices is '3'.
