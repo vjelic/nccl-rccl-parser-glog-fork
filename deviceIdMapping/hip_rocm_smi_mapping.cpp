@@ -28,8 +28,9 @@ THE SOFTWARE.
 #include <stdexcept>
 #include <string>
 #include <array>
-#include <regex>
 #include <vector>
+#include <stdint.h>
+#include "rocm_smi/rocm_smi.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -54,56 +55,19 @@ THE SOFTWARE.
         failed("API returned error code.");                                                        \
     }
 
-void printCompilerInfo() {
-#ifdef __HCC__
-    printf("compiler: hcc version=%s, workweek (YYWWD) = %u\n", __hcc_version__, __hcc_workweek__);
-#endif
-#ifdef __NVCC__
-    printf("compiler: nvcc\n");
-#endif
-}
-
-
-int64_t busIdToInt64(std::string busId) {
-    int64_t id;
-    const int size = busId.size();
-    std::string hexStr;
-    int hexOffset = 0;
-    for (int i= 0; i < size; i++) {
-        char c = busId[i];
-        if (c == '.' || c == ':') continue;
-        if ((c >= '0' && c <= '9') ||
-            (c >= 'A' && c <= 'F') ||
-            (c >= 'a' && c <= 'f')) {
-                hexStr += busId[i];
-        } else break;
-    }
-    std::stringstream ss;
-    ss << std::hex << hexStr;
-    ss >> id;
-    return id;
-}
-
-
-std::string exec(const char* cmd) {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
-    }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
+std::string int2hex(uint64_t num, int digits) {
+    std::stringstream sstream;
+    sstream << std::setfill('0') << std::setw(digits) << std::hex << num;
+    std::string result = sstream.str();
     return result;
 }
 
+
 int main(int argc, char* argv[]) {
-    printCompilerInfo();
     int deviceCnt;
     HIPCHECK(hipGetDeviceCount(&deviceCnt));
-    std::cout << "Number of HIP visible devices is '" << deviceCnt << "'." << std::endl;
-    /* extract the following lines from rocm-smi
+    std::cout << "====================== Number of HIP visible devices: " << deviceCnt << std::endl;
+    /* Example outputs from rocm-smi --showbus
 
     GPU[0]              : PCI Bus: 0000:43:00.0
     GPU[1]              : PCI Bus: 0000:23:00.0
@@ -115,35 +79,32 @@ int main(int argc, char* argv[]) {
     GPU[7]              : PCI Bus: 0000:83:00.0
     */
 
-    std::string results = exec("rocm-smi --showbus");
-    std::stringstream ss(results);
-    std::string to;
+    // ROCm-smi
+    rsmi_status_t ret;
+    uint32_t num_devices;
+    ret = rsmi_init(0);
+    ret = rsmi_num_monitor_devices(&num_devices);
+    std::cout << "====================== Number of GPUs on your machine which can be observed by ROCm-SMI: "<< num_devices << std::endl;
+    std::cout << "====== ROCm-SMI device ID ======= PCI bus ID ======= HIP device ID ======" << std::endl;
+    for (int i = 0; i < num_devices; i++) {
+        uint64_t val_ui64; // bdfid in rocm_smi.cc
+        rsmi_status_t  err = rsmi_dev_pci_id_get(i, &val_ui64);
+        //std::cout << "\t**PCI ID (BDFID): 0x" << std::hex << val_ui64 << std::endl;
+        auto domain = (val_ui64 >> 32) & 0xffff;
+        auto bus = (val_ui64 >> 8) & 0xff;
+        auto device = (val_ui64 >> 3) & 0x1f;
+        auto function = val_ui64 & 0x7;
+        std::string pciString = int2hex(domain, 4) + ":" + int2hex(bus, 2) + ":" + int2hex(device, 2) + "." + int2hex(function, 1);
+        const char* busIdStr = (pciString).c_str();
+        int hipDeviceId;
+        std::cout << "                " << i << "                "<< pciString << "              ";
+        if (hipDeviceGetByPCIBusId(&hipDeviceId, busIdStr) != hipSuccess) {
+            std::cout << "N/A (cannot map PCI Bus ID: " << busIdStr << " to a HIP visible device)" << std::endl;
+        } else std::cout << hipDeviceId << std::endl;
 
-    std::vector<int> gpuId;
-    std::vector<std::string> busId;
-    int count = 0;
-
-    while (std::getline(ss, to, '\n')) {
-        bool found = false;
-        int start = to.find("GPU[");
-        if (start == std::string::npos) continue;
-        start += 4;
-        std::string temp = "";
-        while (isdigit(to[start])) temp += to[start++];
-        found = true;
-        if (found) {
-            gpuId.push_back(stoi(temp));
-            busId.push_back(to.substr(to.find("PCI Bus: ") + 9));
-            std::cout << gpuId[count] << " (rocm-smi GPU ID) ==> "<< busId[count] << " ---> ";
-            const char* busIdStr = busId[count].c_str();
-            int hipDeviceId;
-            if (hipDeviceGetByPCIBusId(&hipDeviceId, busIdStr) != hipSuccess) {
-                std::cout << "FAILED PCI Bus ID mapping for HIP ---> ";
-            } else std::cout << hipDeviceId << " (HIP Device index) ---> ";
-            int64_t id = busIdToInt64(busIdStr);
-            std::cout << id << " (PCI Bus ID in INT64)"<< std::endl;
-
-        }
-        count++;
+        // pic_id = '{:04X}:{:02X}:{:02X}.{:0X}'.format(domain, bus, device, function)
+        //
+        //std::cout << domain << "; "<< bus << "; "<< device << "; "<< function << std::endl;
     }
+    ret = rsmi_shut_down();
 }
