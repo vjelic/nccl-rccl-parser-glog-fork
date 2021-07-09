@@ -27,15 +27,17 @@ GPU[7]          : PCI Bus: 0000:83:00.0
 The following outputs are from this tool on a server with 8 MI60 GPUs. We can use PCI bus id to get device id on HIP by using [hipDeviceGetByPCIBusId](https://rocmdocs.amd.com/en/latest/ROCm_API_References/HIP_API/Initialization-and-Version.html?highlight=hipDeviceGetByPCIBusId#hipdevicegetbypcibusid).
 
 ```
-Number of HIP visible devices is '8'.
-0 (rocm-smi GPU ID) ==> 0000:43:00.0 ---> 0 (HIP Device index) ---> 274432 (PCI Bus ID in INT64)
-1 (rocm-smi GPU ID) ==> 0000:23:00.0 ---> 1 (HIP Device index) ---> 143360 (PCI Bus ID in INT64)
-2 (rocm-smi GPU ID) ==> 0000:26:00.0 ---> 2 (HIP Device index) ---> 155648 (PCI Bus ID in INT64)
-3 (rocm-smi GPU ID) ==> 0000:03:00.0 ---> 3 (HIP Device index) ---> 12288 (PCI Bus ID in INT64)
-4 (rocm-smi GPU ID) ==> 0000:E3:00.0 ---> 4 (HIP Device index) ---> 929792 (PCI Bus ID in INT64)
-5 (rocm-smi GPU ID) ==> 0000:C3:00.0 ---> 5 (HIP Device index) ---> 798720 (PCI Bus ID in INT64)
-6 (rocm-smi GPU ID) ==> 0000:C6:00.0 ---> 6 (HIP Device index) ---> 811008 (PCI Bus ID in INT64)
-7 (rocm-smi GPU ID) ==> 0000:83:00.0 ---> 7 (HIP Device index) ---> 536576 (PCI Bus ID in INT64)
+====================== Number of HIP visible devices: 8
+====================== Number of GPUs on your machine which can be observed by ROCm-SMI: 8
+=================== ROCm-SMI device ID =================== PCI bus ID =================== HIP device ID ===================
+0      --->      0:43:0.0      --->      0
+1      --->      0:23:0.0      --->      1
+2      --->      0:26:0.0      --->      2
+3      --->      0:3:0.0      --->      3
+4      --->      0:e3:0.0      --->      4
+5      --->      0:c3:0.0      --->      5
+6      --->      0:c6:0.0      --->      6
+7      --->      0:83:0.0      --->      7
 ```
 
 As the results shown above, we confirmed that the device (enumeration) indices on HIP and ROCM-SMI are identical when there is no HIP_VISIBLE_DEVICES used.
@@ -48,13 +50,15 @@ or
 ROCR_VISIBLE_DEVICES=0,3,7 ./hip_rocm_smi_mapping
 ```
 ```
-Number of HIP visible devices is '3'.
-0 (rocm-smi GPU ID) ==> 0000:43:00.0 ---> 0 (HIP Device index) ---> 274432 (PCI Bus ID in INT64)
-1 (rocm-smi GPU ID) ==> 0000:23:00.0 ---> FAILED PCI Bus ID ( 0000:23:00.0) mapping for HIP ---> 143360 (PCI Bus ID in INT64)
-2 (rocm-smi GPU ID) ==> 0000:26:00.0 ---> FAILED PCI Bus ID ( 0000:26:00.0) mapping for HIP ---> 155648 (PCI Bus ID in INT64)
-3 (rocm-smi GPU ID) ==> 0000:03:00.0 ---> 1 (HIP Device index) ---> 12288 (PCI Bus ID in INT64)
-4 (rocm-smi GPU ID) ==> 0000:E3:00.0 ---> FAILED PCI Bus ID ( 0000:E3:00.0) mapping for HIP ---> 929792 (PCI Bus ID in INT64)
-5 (rocm-smi GPU ID) ==> 0000:C3:00.0 ---> FAILED PCI Bus ID ( 0000:C3:00.0) mapping for HIP ---> 798720 (PCI Bus ID in INT64)
-6 (rocm-smi GPU ID) ==> 0000:C6:00.0 ---> FAILED PCI Bus ID ( 0000:C6:00.0) mapping for HIP ---> 811008 (PCI Bus ID in INT64)
-7 (rocm-smi GPU ID) ==> 0000:83:00.0 ---> 2 (HIP Device index) ---> 536576 (PCI Bus ID in INT64)
+====================== Number of HIP visible devices: 3
+====================== Number of GPUs on your machine which can be observed by ROCm-SMI: 8
+=================== ROCm-SMI device ID =================== PCI bus ID =================== HIP device ID ===================
+0      --->      0:43:0.0      --->      0
+1      --->      0:23:0.0      --->      N/A (cannot map PCI Bus ID: 0:23:0.0 to a HIP visible device)
+2      --->      0:26:0.0      --->      N/A (cannot map PCI Bus ID: 0:26:0.0 to a HIP visible device)
+3      --->      0:3:0.0      --->      1
+4      --->      0:e3:0.0      --->      N/A (cannot map PCI Bus ID: 0:e3:0.0 to a HIP visible device)
+5      --->      0:c3:0.0      --->      N/A (cannot map PCI Bus ID: 0:c3:0.0 to a HIP visible device)
+6      --->      0:c6:0.0      --->      N/A (cannot map PCI Bus ID: 0:c6:0.0 to a HIP visible device)
+7      --->      0:83:0.0      --->      2
 ```
