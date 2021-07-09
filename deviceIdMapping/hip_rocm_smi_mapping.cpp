@@ -99,15 +99,10 @@ std::string exec(const char* cmd) {
 }
 
 int main(int argc, char* argv[]) {
-    using namespace std;
-
-    cout << endl;
-
     printCompilerInfo();
-
     int deviceCnt;
-
     HIPCHECK(hipGetDeviceCount(&deviceCnt));
+    std::cout << "Number of HIP visible devices is '" << deviceCnt << "'." << std::endl;
     /* extract the following lines from rocm-smi
 
     GPU[0]              : PCI Bus: 0000:43:00.0
@@ -143,8 +138,7 @@ int main(int argc, char* argv[]) {
             const char* busIdStr = busId[count].c_str();
             int hipDeviceId;
             if (hipDeviceGetByPCIBusId(&hipDeviceId, busIdStr) != hipSuccess) {
-                std::cout << "FAILED PCI Bus ID mapping for HIP" << std::endl;
-                return 0;
+                std::cout << "FAILED PCI Bus ID mapping for HIP ---> ";
             } else std::cout << hipDeviceId << " (HIP Device index) ---> ";
             int64_t id = busIdToInt64(busIdStr);
             std::cout << id << " (PCI Bus ID in INT64)"<< std::endl;
