@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     ret = rsmi_init(0);
     ret = rsmi_num_monitor_devices(&num_devices);
     std::cout << "====================== Number of GPUs on your machine which can be observed by ROCm-SMI: "<< num_devices << std::endl;
-    std::cout << "=================== ROCm-SMI device ID =================== PCI bus ID =================== HIP device ID ===================" << std::endl;
+    std::cout << "====== ROCm-SMI device ID ======= PCI bus ID ======= HIP device ID ======" << std::endl;
     for (int i = 0; i < num_devices; i++) {
         uint64_t val_ui64; // bdfid in rocm_smi.cc
         rsmi_status_t  err = rsmi_dev_pci_id_get(i, &val_ui64);
@@ -97,10 +97,14 @@ int main(int argc, char* argv[]) {
         std::string pciString = int2hex(domain, 4) + ":" + int2hex(bus, 2) + ":" + int2hex(device, 2) + "." + int2hex(function, 1);
         const char* busIdStr = (pciString).c_str();
         int hipDeviceId;
-        std::cout << i << "      --->      "<< pciString << "      --->      ";
+        std::cout << "                " << i << "                "<< pciString << "              ";
         if (hipDeviceGetByPCIBusId(&hipDeviceId, busIdStr) != hipSuccess) {
             std::cout << "N/A (cannot map PCI Bus ID: " << busIdStr << " to a HIP visible device)" << std::endl;
         } else std::cout << hipDeviceId << std::endl;
+
+        // pic_id = '{:04X}:{:02X}:{:02X}.{:0X}'.format(domain, bus, device, function)
+        //
+        //std::cout << domain << "; "<< bus << "; "<< device << "; "<< function << std::endl;
     }
     ret = rsmi_shut_down();
 }

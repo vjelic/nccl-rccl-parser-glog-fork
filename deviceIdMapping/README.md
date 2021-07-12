@@ -29,15 +29,16 @@ The following outputs are from this tool on a server with 8 MI60 GPUs. We can us
 ```
 ====================== Number of HIP visible devices: 8
 ====================== Number of GPUs on your machine which can be observed by ROCm-SMI: 8
-=================== ROCm-SMI device ID =================== PCI bus ID =================== HIP device ID ===================
-0      --->      0000:43:00.0      --->      0
-1      --->      0000:23:00.0      --->      1
-2      --->      0000:26:00.0      --->      2
-3      --->      0000:03:00.0      --->      3
-4      --->      0000:e3:00.0      --->      4
-5      --->      0000:c3:00.0      --->      5
-6      --->      0000:c6:00.0      --->      6
-7      --->      0000:83:00.0      --->      7
+====== ROCm-SMI device ID ======= PCI bus ID ======= HIP device ID ======
+                0                0000:43:00.0              0
+                1                0000:23:00.0              N/A (cannot map PCI Bus ID: 0000:23:00.0 to a HIP visible device)
+                2                0000:26:00.0              N/A (cannot map PCI Bus ID: 0000:26:00.0 to a HIP visible device)
+                3                0000:03:00.0              1
+                4                0000:e3:00.0              N/A (cannot map PCI Bus ID: 0000:e3:00.0 to a HIP visible device)
+                5                0000:c3:00.0              N/A (cannot map PCI Bus ID: 0000:c3:00.0 to a HIP visible device)
+                6                0000:c6:00.0              N/A (cannot map PCI Bus ID: 0000:c6:00.0 to a HIP visible device)
+                7                0000:83:00.0              2
+
 ```
 
 As the results shown above, we confirmed that the device (enumeration) indices on HIP and ROCM-SMI are identical when there is no HIP_VISIBLE_DEVICES used.
