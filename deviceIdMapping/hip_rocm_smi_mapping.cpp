@@ -55,12 +55,13 @@ THE SOFTWARE.
         failed("API returned error code.");                                                        \
     }
 
-std::string int2hex(uint64_t num) {
+std::string int2hex(uint64_t num, int digits) {
     std::stringstream sstream;
-    sstream << std::hex << num;
+    sstream << std::setfill('0') << std::setw(digits) << std::hex << num;
     std::string result = sstream.str();
     return result;
 }
+
 
 int main(int argc, char* argv[]) {
     int deviceCnt;
@@ -93,7 +94,7 @@ int main(int argc, char* argv[]) {
         auto bus = (val_ui64 >> 8) & 0xff;
         auto device = (val_ui64 >> 3) & 0x1f;
         auto function = val_ui64 & 0x7;
-        std::string pciString = int2hex(domain) + ":" + int2hex(bus) + ":" + int2hex(device) + "." + int2hex(function);
+        std::string pciString = int2hex(domain, 4) + ":" + int2hex(bus, 2) + ":" + int2hex(device, 2) + "." + int2hex(function, 1);
         const char* busIdStr = (pciString).c_str();
         int hipDeviceId;
         std::cout << i << "      --->      "<< pciString << "      --->      ";
