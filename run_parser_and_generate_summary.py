@@ -43,7 +43,7 @@ def main():
             sys.exit(1)
         
         os.system("cat net_unique.sh")
-        run_script_cmd = "sh net_unique.sh | tee nccl_perf_log.txt"
+        run_script_cmd = "HSA_FORCE_FINE_GRAIN_PCIE=1 sh net_unique.sh | tee nccl_perf_log.txt"
         if os.system(run_script_cmd):
             print ("ERROR: unable to run nccl-tests")
             sys.exit(1)
