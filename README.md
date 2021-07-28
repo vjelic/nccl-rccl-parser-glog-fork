@@ -20,7 +20,14 @@ To run the tests, we use the following repositories:
 Firstly, make sure you are running the experiments of a distributed setup of an application.
 Make sure to run the application for at least 1 iteration using the below two environment variables into a log file named nccl_debug_log.txt
 
-```NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt```
+**On CUDA:**
+```
+NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt
+```
+**On ROCm:** (needed for PCIe P2P but not needed for GPUs connected by XGMI, [ref](https://github.com/ROCmSoftwarePlatform/rccl/issues/92#issuecomment-540696989))
+```
+HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt
+```
 
 
 ### Automated way:
