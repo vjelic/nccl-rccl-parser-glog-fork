@@ -58,7 +58,7 @@ python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-n
 (or)
 python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique
 (or)
-python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique
+python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique --new-log
 ```
 
 The first command dumps out all the rccl/nccl tests in the order they get executed in the application. (net_rccl_nccl.sh file).
