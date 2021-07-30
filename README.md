@@ -20,9 +20,9 @@ To run the tests, we use the following repositories:
 Firstly, make sure you are running the experiments of a distributed setup of an application.
 Make sure to run the application for at least 1 iteration using the below two environment variables into a log file named nccl_debug_log.txt
 
-```NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt```
+```NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL,GRAPH RCCL_KERNEL_COLL_TRACE_ENABLE=1 <application> |& tee nccl_debug_log.txt```
 
-### Automated way:
+### Automated way (TODO):
 
 To gather the performance results once you have the debug log with you. Run the below command. 
 
@@ -57,10 +57,13 @@ Here is the usage of the script
 python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net
 (or)
 python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique
+(or)
+python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique
 ```
 
 The first command dumps out all the rccl/nccl tests in the order they get executed in the application. (net_rccl_nccl.sh file).
-The second command dumps out a script file with unique commands and a csv file with commands and its counts of each command. 
+The second command dumps out a script file with unique commands and a csv file with commands and its counts of each command from a log with NCCL or RCCL 2.8 or below. 
+The third command dumps out a script file with unique commands and a csv file with commands and its counts of each command from a log with RCCL 2.9 or above.
 
 **Run rccl-tests/nccl-tests:**
 
