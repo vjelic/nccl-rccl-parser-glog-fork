@@ -117,17 +117,13 @@ def generate_script(commands, output_script):
     fs.close()
     print("INFO: Dumped out the commands in a script named: {}".format(filename))
 
-def dump_counts_map(unique_command_list, counts_list, output_file):
+def dump_counts_map(unique_command_list, counts_list, output_file): ###########################
     filename = output_file + ".csv"
-    fs = open(filename, 'w')
-    fs.write("sep=|")
-    fs.write("\n")
-    for (command, count) in zip(unique_command_list, counts_list):
-        fs.write(command + "|" + str(count))
-        fs.write("\n")
-    fs.close()
-    print ("INFO: Dumped out the count of each command in a file named: {}".format(filename))
-
+    dict_command_count = {'command': unique_command_list, 'count': counts_list}
+    table = pd.DataFrame(dict_command_count)
+    table.to_csv(filename)
+    print ("INFO: Dumped out the count of each command in a file named: {}".format(filename))    
+    
 # ts1-sjc2-27:11585:11585 [0] NCCL INFO Broadcast: opCount 0 sendbuff 0x7f988f200400 recvbuff 0x7f988f200400 count 440 datatype 0 op 0 root 0 comm 0x7f905c000dc0 [nranks=4] stream 0x55aa0a8d78f0
 def coll_table_build(coll_lines):
     opCount, coll, count, datatype, op_type, root, comm, nranks, data_size = [], [], [], [], [], [], [], [], []
@@ -319,6 +315,7 @@ def generate_topo_script(commands, topo_info, busId_HIP_map, output_script):
                     device_setting = device_setting + str(busId_HIP_map[device]) + ","
             fs.write(device_setting + commands[j])
             fs.write("\n")
+    fs.write("echo '==========================================================' \n")
     fs.close()
     print("INFO: Dumped out the commands with device assignment in a script named: {}".format(filename))
 
@@ -407,7 +404,7 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--nccl-debug-log", type=str, required=True, help="RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 <executable>")
-    parser.add_argument("--new_log", action="store_true", default=False, help="If the application is using ROCm systems with RCCL 2.9 or above.") # 
+    parser.add_argument("--new-log", action="store_true", default=False, help="If the application is using ROCm systems with RCCL 2.9 or above.") # 
     parser.add_argument("--output-script-name", type=str, required=False, default="net_nccl_rccl", help="Output command script")
     parser.add_argument("--unique", action="store_true", default=False, help="Get only the unique commands.")
 
@@ -415,5 +412,5 @@ if __name__ == '__main__':
     main()
 
 # python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique --new_log
+# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique
+# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique --new-log
