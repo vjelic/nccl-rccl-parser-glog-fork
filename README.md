@@ -12,7 +12,10 @@ To run the tests, we use the following repositories:
 # Pre-requisites:
 * RCCL/NCCL installed. 
 * rccl-tests or nccl-tests installed.
-
+* Run installation script by 
+  ```
+  sh install.sh
+  ```
 # How to use the tool:
 
 ### Run application and collect RCCL/NCCL Log:**
