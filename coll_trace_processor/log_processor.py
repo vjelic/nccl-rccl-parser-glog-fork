@@ -153,7 +153,7 @@ def get_useful_info(log_file):
             
     return coll_lines, conn_lines, comm_lines, ring_lines, tree_lines, coll_trace_lines
 
-def coll_table(coll_lines):
+def coll_table_build(coll_lines):
     opCount, coll, count, datatype, op_type, root, comm, nranks, data_size = [], [], [], [], [], [], [], [], []
     for line in coll_lines:
         split_list = line.split(" ")
@@ -168,8 +168,11 @@ def coll_table(coll_lines):
         data_size.append(int(split_list[split_list.index("count") + 1]) * data_type_bytes_map[split_list[split_list.index("datatype") + 1]])
         
     dict_coll = {'coll': coll, 'opCount': opCount, 'datatype': datatype, 'count':count, 'op_type':op_type, 'root':root, 'comm':comm, 'nranks':nranks, 'data_size':data_size}
-    return pd.DataFrame(dict_coll)
-
+    table = pd.DataFrame(dict_coll)    
+    table['algobw_factor_times_size'] = table.apply(lambda row: 
+                                                    algobw_factor_times_size(row['coll'], row['nranks'], row['data_size']), axis=1)
+    table = table[['opCount','nranks','algobw_factor_times_size', 'data_size']].drop_duplicates(subset = ['opCount', 'data_size'])
+    return table
 
 ## It works for connection information like XXX via "P2P/direct pointer%s".(useReadStr),       --> pointer%s will not be collected
 ##                                                  "P2P/IPC%s".(useReadStr),  
@@ -179,7 +182,7 @@ def coll_table(coll_lines):
 
 ## xxx [4] NCCL INFO Channel 00 : 0[e3000] -> 1[c3000] via P2P/IPC comm 0x7f53bc000e50 nRanks 04',  #(new output)
 
-def conn_table(conn_lines):  # Only works for RCCL 2.9 or above
+def conn_table_build(conn_lines):  # Only works for RCCL 2.9 or above
     def process_string(line):
         split_list = line.split("[")
         return [split_list[0], split_list[1].split("]")[0]]
@@ -202,7 +205,7 @@ def conn_table(conn_lines):  # Only works for RCCL 2.9 or above
     return pd.DataFrame(dict_conn)
 
 
-def comm_table(comm_lines):
+def comm_table_build(comm_lines):
     comm, rank, nranks, cudaDev, busId = [], [], [], [], []   
     for line in comm_lines:
         split_list = line.rstrip().split(" ")
@@ -215,7 +218,7 @@ def comm_table(comm_lines):
     return pd.DataFrame(dict_comm)
 
 
-def topo_table(topo_lines):
+def topo_table_build(topo_lines):
     comm, nranks, busId, topo_line = [], [], [], []
     for line in topo_lines:
         split_list = line.split(" ")
@@ -229,7 +232,7 @@ def topo_table(topo_lines):
 def create_table(log_name):
     log_file = os.path.abspath(log_name)
     coll_lines, conn_lines, comm_lines, ring_lines, tree_lines, coll_trace_lines = get_useful_info(log_file)
-    return coll_table(coll_lines), conn_table(conn_lines), comm_table(comm_lines), topo_table(ring_lines), topo_table(tree_lines), coll_trace_lines
+    return coll_table_build(coll_lines), conn_table_build(conn_lines), comm_table_build(comm_lines), topo_table_build(ring_lines), topo_table_build(tree_lines), coll_trace_lines
 
 
 def device_grouping(comm_table, conn_table):
@@ -287,6 +290,7 @@ def modify_label(in_txt, out_txt, rank_busId_mapping):
 
 
 def coll_trace_processor(coll_trace_lines, group_list, coll_table):
+    print(group_list)
     def process_string(line):
         split_list = line.split("[")
         return split_list[1].split("]")[0]
@@ -306,7 +310,6 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     busId = split_list[split_list.index("busId") + 1]
                     nranks = split_list[split_list.index("nRanks") + 1]
                     KL_key = str(op) + "," + str(busId) + "," + str(nranks) + ",t0"
-#                     KL_key = str(op) + "," + str(busId) + ",t0"
                 else:
                     # RCCL 2.8 or older
                     busId = int(rk)
@@ -325,9 +328,8 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     busId = split_list[split_list.index("busId") + 1]
                     nranks = split_list[split_list.index("nRanks") + 1]
                     KE_key = str(op) + "," + str(busId) + "," + str(nranks) + ",t1"
-#                     KE_key = str(op) + "," + str(busId) + ",t1"
                 else:
-                    # RCCL 2.8 or older
+                    # RCCL 2.8 or below
                     busId = int(rk)
                     RCCL_2_8 = True
                     KE_key = str(op) + "," + str(busId) + ",t1"
@@ -340,7 +342,6 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     busId = split_list[split_list.index("busId") + 1]
                     nranks = split_list[split_list.index("nRanks") + 1]
                     CE_key = str(op) + "," + str(busId) + "," + str(nranks) + ",t1"
-#                     CE_key = str(op) + "," + str(busId) + "," + ",t1"
                 else:
                     # RCCL 2.8 or older
                     busId = int(rk)
@@ -354,14 +355,11 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
             raise AssertionError("Abort")
     
     
-
     # Second pass
     bw_tables, time_tables = [], []
     for i, group in enumerate(group_list):
         group = list(group)
-        # final_list = []
-        bw_list = []
-        time_list = []
+        bw_list, time_list = [], []
         for op in func_name:
             found = False
             time_start, time_end = 1e9, 0
@@ -396,73 +394,80 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
             if found:
                 algobw_factor_times_size = coll_table[(coll_table['opCount'] == op) & (coll_table['nranks'] == len(group))]['algobw_factor_times_size'].unique()[0]
                 data_size = coll_table[(coll_table['opCount'] == op) & (coll_table['nranks'] == len(group))]['data_size'].unique()[0]
-                bw = temp
-                bw[2:] = algobw_factor_times_size / bw[2:] /1e9
+                bw = temp[:2]
+                for k in range(len(group)):
+                    bw.append(algobw_factor_times_size / temp[k + 2] /1e9)
+                
                 bw = bw + [data_size, algobw_factor_times_size/(time_end - time_start)/1e9]
                 temp.append(data_size)
                 time_list.append(temp)
                 bw_list.append(bw)
-        
+                
         time_tables.append(pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['data_size']))
         bw_tables.append(pd.DataFrame(bw_list, columns = ['opCount', 'Function Name'] + group + ['data_size', 'algBW']))
     return time_tables, bw_tables
 
 def rccl_log_process():
     debug_log = os.path.abspath(args.rccl_debug_log)
-    device_grouping_output = os.path.join(os.path.dirname(os.path.realpath(__file__)), "device_groups.txt")
-    coll_table, conn_table, comm_table, ring_table, tree_table, coll_trace_lines = create_table(debug_log)
-    device_group_list = device_grouping(comm_table, conn_table)
-    with open(device_grouping_output, 'w') as f:
-        for mySet in device_group_list:
-            f.write("%s\n" % str(mySet))    
-    
-    for i, group in enumerate(device_group_list):
-        group = list(group)
-        print(group)
-        temp_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_{}.txt".format(i))
-        temp1_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_1_{}.txt".format(i))
-        temp2_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_2_{}.txt".format(i))
-        nranks = len(group)
-        lines = []
-        rank_busId_mapping = {}
-        for device in group:
-            comms = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['comm'].unique()
-            assert len(comms) == 1       # if not 1, it means different devices may have same nRanks and busId.
-            lines = collect_topo(comms[0], nranks, ring_table, tree_table, conn_table, lines)
-            rank = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['rank'].unique()[0]
-            busId = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['busId'].unique()[0]
-            rank_busId_mapping[rank] = busId
-        
-        with open(temp_txt, 'w') as f:
-            for line in lines:
-                f.write("{}\n".format(line))
-                
-        p1 = subprocess.Popen("awk -f extract_topo.awk {} > {}".format(temp_txt, temp1_txt), stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
-        time.sleep(1)
-        modify_label(temp1_txt, temp2_txt, rank_busId_mapping)
-        p2 = subprocess.Popen("dot -Tpng {} -o '{}.png'".format(temp2_txt, i), stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
-        p3 = subprocess.Popen("rm -r temp*.txt", stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+    if args.cuda:
+        coll_lines, conn_lines, comm_lines, ring_lines, tree_lines, coll_trace_lines = get_useful_info(debug_log)
+        coll_table = coll_table_build(coll_lines)
+        device_group_list = [[i for i in range(args.num_devices)]]
+        print("Using CUDA or ROCm with RCCL 2.8 or below.")
+    else:
+        device_grouping_output = os.path.join(os.path.dirname(os.path.realpath(__file__)), "device_groups.txt")
+        coll_table, conn_table, comm_table, ring_table, tree_table, coll_trace_lines = create_table(debug_log)
+        device_group_list = device_grouping(comm_table, conn_table)
+        with open(device_grouping_output, 'w') as f:
+            for mySet in device_group_list:
+                f.write("%s\n" % str(mySet))    
+
+        for i, group in enumerate(device_group_list):
+            group = list(group)
+            print(group)
+            temp_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_{}.txt".format(i))
+            temp1_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_1_{}.txt".format(i))
+            temp2_txt = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp_2_{}.txt".format(i))
+            nranks = len(group)
+            lines = []
+            rank_busId_mapping = {}
+            for device in group:
+                comms = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['comm'].unique()
+                assert len(comms) == 1       # if not 1, it means different devices may have same nRanks and busId.
+                lines = collect_topo(comms[0], nranks, ring_table, tree_table, conn_table, lines)
+                rank = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['rank'].unique()[0]
+                busId = comm_table[(comm_table['nranks'] == nranks) & (comm_table['busId'] == device)]['busId'].unique()[0]
+                rank_busId_mapping[rank] = busId
+
+            with open(temp_txt, 'w') as f:
+                for line in lines:
+                    f.write("{}\n".format(line))
+
+            p1 = subprocess.Popen("awk -f extract_topo.awk {} > {}".format(temp_txt, temp1_txt), 
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+            time.sleep(1)
+            modify_label(temp1_txt, temp2_txt, rank_busId_mapping)
+            p2 = subprocess.Popen("dot -Tpng {} -o '{}.png'".format(temp2_txt, i), stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+            p3 = subprocess.Popen("rm -r temp*.txt", stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
     
     ########### Collective trace processor ###########
-    
-    coll_table['algobw_factor_times_size'] = coll_table.apply(lambda row: algobw_factor_times_size(row['coll'], row['nranks'], row['data_size']), axis=1)
-    coll_table = coll_table[['opCount','nranks','algobw_factor_times_size', 'data_size']].drop_duplicates(subset = ['opCount', 'data_size'])
     time_tables, bw_tables = coll_trace_processor(coll_trace_lines, device_group_list, coll_table)
     for i, (time_table, bw_table) in enumerate(zip(time_tables, bw_tables)):
         time_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), "time_{}.csv".format(i))
         bw_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bw_{}.csv".format(i))
         time_table.to_csv(time_csv)
         bw_table.to_csv(bw_csv)
-    
-
+        
 
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--rccl-debug-log", type=str, required=True, \
                             help="RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 executable")
-    args = parser.parse_args()
     
+    parser.add_argument("--cuda", action="store_true", default=False, help="If the application is using CUDA systems or ROCm systems with RCCL 2.8 or below, the topology visualizer will not be enabled.") # 
+    parser.add_argument('--num_devices', type=int, default=1, help="If the application is using CUDA systems or ROCm systems with RCCL 2.8 or below, the number of devices needs to be specified.") #
+    args = parser.parse_args()
     #### Requirement check #### 
     required = {'pandas'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
@@ -472,4 +477,3 @@ if __name__ == '__main__':
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
     import pandas as pd
     rccl_log_process()
-    
