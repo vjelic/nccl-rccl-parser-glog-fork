@@ -62,3 +62,5 @@ HIP_VISIBLE_DEVICES=0,4 ./build/all_reduce_perf -d uint8 -b 1 -e 1 -o max -g 2
 echo '==========================================================' 
 HIP_VISIBLE_DEVICES=3,2,0,1 ./build/all_reduce_perf -d uint8 -b 1 -e 1 -o max -g 4
 HIP_VISIBLE_DEVICES=7,6,5,4 ./build/all_reduce_perf -d uint8 -b 1 -e 1 -o max -g 4
+echo '==========================================================' 
+
