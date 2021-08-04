@@ -128,7 +128,7 @@ def dump_counts_map(unique_command_list, counts_list, output_file): ############
 def coll_table_build(coll_lines):
     opCount, coll, count, datatype, op_type, root, comm, nranks, data_size = [], [], [], [], [], [], [], [], []
     for line in coll_lines:
-        split_list = line.split(" ")
+        split_list = line.split()
         coll.append(split_list[4][:-1])
         opCount.append(int(split_list[6], 16))
         count.append(split_list[12])
@@ -146,7 +146,7 @@ def coll_table_build(coll_lines):
     table['raw_command'] = coll_lines
     return table
 
-def conn_table_build(conn_lines, new_log):  # Only works for RCCL 2.9 or above
+def conn_table_build(conn_lines, legacy_device_grouping):  # Only works for RCCL 2.9 or above
     def process_string(line):
         split_list = line.split("[")
         return [split_list[0], split_list[1].split("]")[0]]
@@ -161,13 +161,13 @@ def conn_table_build(conn_lines, new_log):  # Only works for RCCL 2.9 or above
         end_rank.append(er)
         end_busid.append(eb)
         connection.append(split_list[split_list.index("via") + 1])  # if it is direct, it means the connection is done by direct shared memory
-        if new_log:
+        if not legacy_device_grouping:
             if "comm" not in line:
-                raise AssertionError("This NCCL/RCCL log is from older versions. Please use RCCL 2.9 or above.")
+                raise AssertionError("This NCCL/RCCL log is from an older version. Please use RCCL 2.9 or above.")
             comm.append(split_list[split_list.index("comm") + 1])
             nranks.append(int(split_list[split_list.index("nRanks") + 1]))
     
-    if new_log:
+    if not legacy_device_grouping:
         dict_conn = {'start_rank': start_rank, 'start_busid': start_busid, 'end_rank': end_rank, 'end_busid': end_busid, 
                     'connection': connection, 'comm':comm, 'nranks':nranks, 'conn_line':conn_lines}      
     else:
@@ -319,12 +319,12 @@ def generate_topo_script(commands, topo_info, busId_HIP_map, output_script):
     fs.close()
     print("INFO: Dumped out the commands with device assignment in a script named: {}".format(filename))
 
-def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, conn_table, comm_table, new_log, output_name):
-    all_info = pd.merge(coll_table, comm_table, on=['comm','nranks']) #### 
+def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, conn_table, comm_table, legacy_device_grouping, output_name):
+    all_info = pd.merge(coll_table, comm_table, on=['comm','nranks'])
     topo_info = []
-    if not new_log:
+    if legacy_device_grouping:
         for command in raw_command_list:
-            split_list = command.split(" ")
+            split_list = command.split()
             coll = split_list[4][:-1]
             opCount = int(split_list[6], 16)
             count = split_list[12]
@@ -345,7 +345,7 @@ def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, con
     else:
         device_group_list = device_grouping(comm_table, conn_table)
         for command in command_list:
-            split_list = command.split(" ")
+            split_list = command.split()
             nranks = int(split_list[split_list.index("-g") + 1])
             temp = []
             for deviceSet in device_group_list:
@@ -386,7 +386,7 @@ def main():
     log_file = os.path.abspath(args.nccl_debug_log)
     coll_lines, conn_lines, comm_lines, ring_lines, tree_lines, coll_trace_lines = get_useful_info(log_file)
     coll_table = coll_table_build(coll_lines)
-    conn_table = conn_table_build(conn_lines, args.new_log)
+    conn_table = conn_table_build(conn_lines, args.legacy_device_grouping)
     comm_table = comm_table_build(comm_lines)
     command_list, counts_list, raw_command_list = get_commands(coll_table, args.unique)
     path_to_deviceIdMapping = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deviceIdMapping/busId_HIP_map.txt")
@@ -397,14 +397,14 @@ def main():
         generate_script(command_list, args.output_script_name + "_unique")
         dump_counts_map(command_list, counts_list, args.output_script_name + "_counts")
         generate_topo(busId_hip_map, command_list, raw_command_list, coll_table, conn_table, 
-                            comm_table, args.new_log, args.output_script_name + "_unique_topo")
+                            comm_table, args.legacy_device_grouping, args.output_script_name + "_unique_topo")
     else:
         generate_script(command_list, args.output_script_name)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--nccl-debug-log", type=str, required=True, help="RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 <executable>")
-    parser.add_argument("--new-log", action="store_true", default=False, help="If the application is using ROCm systems with RCCL 2.9 or above.") # 
+    parser.add_argument("--legacy-device-grouping", action="store_true", default=False, help="If the application is using CUDA systems or ROCm systems with RCCL 2.8 or below.") # 
     parser.add_argument("--output-script-name", type=str, required=False, default="net_nccl_rccl", help="Output command script")
     parser.add_argument("--unique", action="store_true", default=False, help="Get only the unique commands.")
 
@@ -412,5 +412,5 @@ if __name__ == '__main__':
     main()
 
 # python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique --new-log
+# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique --legacy-device-grouping
+# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique 
