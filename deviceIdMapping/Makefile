@@ -21,8 +21,8 @@ CXXFLAGS=-g -O3 -I$(ROCM_PATH)/rocm_smi/include -lrocm_smi64 -L$(ROCM_PATH)/rocm
 all: $(EXE)
 
 $(EXE): $(files)
-        $(HIPCC) $(CXXFLAGS) $^ -o $@
+		$(HIPCC) $(CXXFLAGS) $^ -o $@
 
 
 clean:
-        rm -f *.o $(EXE)
+		rm -f *.o $(EXE)

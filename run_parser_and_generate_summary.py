@@ -7,9 +7,9 @@ def main():
     
     ## Generate a script to run nccl/rccl tests.
     if args.legacy_device_grouping:
-        gen_cmd = gen_cmd = "python rccl_nccl_parser_new.py --nccl-debug-log " + debug_log + " --output-script-name net --unique --legacy-device-grouping"
+        gen_cmd = gen_cmd = "python rccl_nccl_parser.py --nccl-debug-log " + debug_log + " --output-script-name net --unique --legacy-device-grouping"
     else:
-        gen_cmd = "python rccl_nccl_parser_new.py --nccl-debug-log " + debug_log + " --output-script-name net --unique"
+        gen_cmd = "python rccl_nccl_parser.py --nccl-debug-log " + debug_log + " --output-script-name net --unique"
     if os.system(gen_cmd):
         print ("ERROR: Failed to parse the log.")
         sys.exit(1)
@@ -32,7 +32,7 @@ def main():
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
         print (os.getcwd())
-        summary_cmd = "python generate_summary_new.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv"
+        summary_cmd = "python generate_summary.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv"
                 
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
@@ -56,7 +56,7 @@ def main():
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
         print (os.getcwd())
-        summary_cmd = "python generate_summary_new.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv"
+        summary_cmd = "python generate_summary.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv"
                 
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
@@ -71,3 +71,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main()
+# python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log.txt --rocm --legacy-device-grouping
+# python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --rocm
