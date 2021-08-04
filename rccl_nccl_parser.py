@@ -394,7 +394,6 @@ def main():
         raise AssertionError("Remember to run 'sh install.sh' before using this tool.")
     busId_hip_map = hip_busId_mapping(path_to_deviceIdMapping)
     if (args.unique):
-        generate_script(command_list, args.output_script_name + "_unique")
         dump_counts_map(command_list, counts_list, args.output_script_name + "_counts")
         generate_topo(busId_hip_map, command_list, raw_command_list, coll_table, conn_table, 
                             comm_table, args.legacy_device_grouping, args.output_script_name + "_unique_topo")
