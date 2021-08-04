@@ -11,7 +11,10 @@ To run the tests, we use the following repositories:
 
 # Pre-requisites:
 * RCCL/NCCL installed. 
-* rccl-tests or nccl-tests installed.
+* Clone this repo with 
+  ```
+  git clone --recursive https://github.com/lcskrishna/nccl-rccl-parser.git
+  ```
 * Run installation script by 
   ```
   sh install.sh
