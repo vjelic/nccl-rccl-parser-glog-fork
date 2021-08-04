@@ -26,7 +26,6 @@ def rccl_tests_log_processor(script_file):
 
 def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
     size, count_1, datatype, op_type, time_oplace, algbw_gbs_oplace, busbw_oplace, error_oplace, time_iplace, algbw_gbs_iplace, busbw_iplace, error_iplace, avg_busbw, count = [], [], [], [], [], [], [], [], [], [], [], [], [], []
-    total_oplace_time = 0
     count_table = pd.read_csv(net_counts_csv)
     for i, row in count_table.iterrows():
         for line in perf_lines[i]:
@@ -46,7 +45,6 @@ def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
             avg_busbw.append(split_list[-1])
             assert row['count'] % len(perf_lines[i]) == 0
             count.append(int(row['count']//len(perf_lines[i])))
-            total_oplace_time = total_oplace_time + int(row['count']//len(perf_lines[i])) * float(split_list[4])
     
     dict_summary = {"size":size, "count_1":count_1, "datatype":datatype, 
                           "op_type":op_type, "time_oplace":time_oplace, "algbw_gbs_oplace":algbw_gbs_oplace,
@@ -56,8 +54,6 @@ def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
     table = pd.DataFrame(dict_summary)
     table.to_csv(output_file)
     print ("INFO: Dumped out the count of each command in a file named: {}".format(output_file)) 
-    total_oplace_time = total_oplace_time * 1e-6
-    print("The total time spent on RCCL/NCCL (out-of-place) collective operations is {} sec.".format(total_oplace_time))
     return table
 
 

@@ -6,8 +6,8 @@ def main():
     debug_log = os.path.abspath(args.nccl_debug_log)
     
     ## Generate a script to run nccl/rccl tests.
-    if args.new_log:
-        gen_cmd = gen_cmd = "python rccl_nccl_parser_new.py --nccl-debug-log " + debug_log + " --output-script-name net --unique --new-log"
+    if args.legacy_device_grouping:
+        gen_cmd = gen_cmd = "python rccl_nccl_parser_new.py --nccl-debug-log " + debug_log + " --output-script-name net --unique --legacy-device-grouping"
     else:
         gen_cmd = "python rccl_nccl_parser_new.py --nccl-debug-log " + debug_log + " --output-script-name net --unique"
     if os.system(gen_cmd):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
                             help="NCCL/RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL")
     parser.add_argument("--rocm", action="store_true", default=False, help="Run the tests on ROCm using rccl-tests")
     parser.add_argument("--cuda", action="store_true", default=False, help="Run the tests on CUDA using nccl-tests")
-    parser.add_argument("--new-log", action="store_true", default=False, help="NCCL/RCCL log after running app with NCCL or RCCL 2.8 or below")
+    parser.add_argument("--legacy-device-grouping", action="store_true", default=False, help="NCCL/RCCL log after running app with NCCL or RCCL 2.8 or below")
 
     args = parser.parse_args()
     main()

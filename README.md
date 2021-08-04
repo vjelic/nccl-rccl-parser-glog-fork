@@ -40,28 +40,24 @@ On CUDA devices, use --cuda argument.
 
 On ROCm devices, use --rocm argument.
 
-With RCCL 2.9 or above, the argument "--new-log" is required to enhance device grouping in applications. It also enables the further analysis of collective traces.
+With NCCL or RCCL 2.8 or below, the argument "--legacy-device-grouping" is required for device grouping in applications. 
 
 Note: If you don't mention the arguments the automated script only dumps out the output data from the parser. 
 
 **On ROCm:**
 
 ```
-python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --rocm
+python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --rocm --legacy-device-grouping
 ```
 
 ```
-python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_new_log.txt --rocm --new-log
+python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_new_log.txt --rocm
 ```
 
 **On CUDA:**
 
 ```
-python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --cuda
-```
-In the end, we will also obtain a time estimate spent on RCCL/NCCL collective operations collected from RCCL/NCCL tests with RCCL/NCCL log file of our distributed application as follows:
-```
-The total time spent on RCCL/NCCL (out-of-place) collective operations is 16.230084779999995 sec.
+python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --cuda --legacy-device-grouping
 ```
 
 ### To run the tool manually step by step:
@@ -70,7 +66,7 @@ The total time spent on RCCL/NCCL (out-of-place) collective operations is 16.230
 
 Once the log is being collected, use the parser to dump out all the rccl/nccl test commands or just the unique commands with their respective counts of the workload.
 Note: To dump out the unique commands use the --unique argument. 
-Note: To dump out the commands for the applications with RCCL 2.9 or above use --new-log argument. 
+Note: To dump out the commands for the applications with NCCL or RCCL 2.8 or below use --legacy-device-grouping argument. 
 Optional parameters: output-script-name, unique
 
 Here is the usage of the script
@@ -80,7 +76,7 @@ python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-n
 (or)
 python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique
 (or)
-python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique --new-log"
+python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique --legacy-device-grouping"
 ```
 
 The first command dumps out all the rccl/nccl tests in the order they get executed in the application. (net_rccl_nccl.sh file).
@@ -105,10 +101,6 @@ To generate the summary, navigate to the tool nccl-rccl-parser:
 python generate_summary.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv
 ```
 This dumps out a csv file with performance data for further analysis. 
-It also prints out the time estimate spent on RCCL/NCCL collective operations collected from RCCL/NCCL tests with RCCL/NCCL log file of our distributed application as follows:
-```
-The total time spent on RCCL/NCCL (out-of-place) collective operations is 16.230084779999995 sec.
-```
 
 **Supported Collectives:**
 
