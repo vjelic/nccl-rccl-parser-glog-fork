@@ -25,6 +25,7 @@ def main():
         
         os.system("cat net_unique_topo.sh")
         run_script_cmd = "HSA_FORCE_FINE_GRAIN_PCIE=1 sh net_unique_topo.sh | tee topo_rccl_tests.txt"
+
         if os.system(run_script_cmd):
             print ("ERROR: Unable to run rccl-tests properly.")
             sys.exit(1)
@@ -71,5 +72,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main()
-# python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log.txt --rocm --legacy-device-grouping
-# python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --rocm
