@@ -15,11 +15,6 @@ NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL only enable collective API trace. Co
 ```
 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL,GRAPH RCCL_KERNEL_COLL_TRACE_ENABLE=1 <application> |& tee nccl_debug_log.txt
 ```
-**Run the installation script to meet the requirements of this tool:**
-
-```
-sh install.sh
-```
 
 ## Usage
 For more information about RCCL collective traces, please go to [here](https://confluence.amd.com/display/MLSE/RCCL+Collective+Trace).
