@@ -35,6 +35,7 @@ NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.
 HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt
 ```
 
+
 ### Automated way:
 
 To gather the performance results once you have the debug log with you. Run the below command. 

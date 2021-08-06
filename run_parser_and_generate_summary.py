@@ -25,6 +25,7 @@ def main():
         
         os.system("cat net_unique_topo.sh")
         run_script_cmd = "HSA_FORCE_FINE_GRAIN_PCIE=1 sh net_unique_topo.sh | tee topo_rccl_tests.txt"
+
         if os.system(run_script_cmd):
             print ("ERROR: Unable to run rccl-tests properly.")
             sys.exit(1)
