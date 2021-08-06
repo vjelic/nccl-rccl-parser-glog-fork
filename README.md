@@ -109,12 +109,3 @@ This dumps out a csv file with performance data for further analysis.
 
 Currently only the AllReduce and Broadcast calls are being supported by this tool. Based on running more experiments other collectives need to be added. 
 
----
-### Run application and collect RCCL/NCCL Log with topology information [**experimental**]:**
-```NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL,GRAPH <application> |& tee nccl_debug_log.txt```
-### To run the tool manually step by step:
-```
-python rccl_nccl_parser.py --nccl-debug-log nccl_debug_log.txt --output-script-name net --unique --topology
-```
-For example, the output file for [DeepSpeed Megatron-LM GPT2 model pretraining](https://confluence.amd.com/display/~jnair/DeepSpeed+on+PyTorch) with 4way parallelism on a 8-GPU ROCm system can be found [here](net_unique_topo.sh). Notice that the commands and topology info are not matching. The problem is still being investigated.
-
