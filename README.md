@@ -19,6 +19,14 @@ To run the tests, we use the following repositories:
   ```
   sh install.sh
   ```
+* Install rccl-tests or nccl-tests.
+  ```
+  cd rccl-tests; make
+  
+  or
+  
+  cd nccl-tests; make
+  ```
 # How to use the tool:
 
 ### Run application and collect RCCL/NCCL Log:**
