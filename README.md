@@ -2,8 +2,9 @@
 This tool is used for dumping out the rccl-tests/nccl-test commands directly from an application to identify any potential bottlenecks of scaling while using RCCL/NCCL modules when running a distributed applications.
 
 To get started please clone the following repository: 
+```
 git clone --recursive https://github.com/ROCmSoftwarePlatform/nccl-rccl-parser
-
+```
 To run the tests, we use the following repositories:
 
 * On ROCm: https://github.com/ROCmSoftwarePlatform/rccl-tests
