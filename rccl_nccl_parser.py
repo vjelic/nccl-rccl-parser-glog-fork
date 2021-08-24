@@ -413,3 +413,8 @@ if __name__ == '__main__':
 # python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net
 # python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique --legacy-device-grouping
 # python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique 
+
+
+# TODO: add two inputs: "MP" and "DP"  assert if MP*DP != total_number_of_GPUs_detected
+# TODO: consider the case when MP = DP
+# TODO: output device_groups.txt with MP and DP info

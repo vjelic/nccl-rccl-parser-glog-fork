@@ -30,7 +30,10 @@ THE SOFTWARE.
 #include <array>
 #include <vector>
 #include <stdint.h>
+#include <assert.h>
 #include "rocm_smi/rocm_smi.h"
+// #include "rocm_smi/rocm_smi_exception.h"
+
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -85,11 +88,21 @@ int main(int argc, char* argv[]) {
     ret = rsmi_init(0);
     ret = rsmi_num_monitor_devices(&num_devices);
     std::cout << "====================== Number of GPUs on your machine which can be observed by ROCm-SMI: "<< num_devices << std::endl;
-    std::cout << "====== ROCm-SMI device ID ======= PCI bus ID ======= HIP device ID ======" << std::endl;
+    std::cout << "====== ROCm-SMI device ID ======= PCI bus ID ======= HIP device ID ========================================================== NUMA node ====" << std::endl;
+        
     for (int i = 0; i < num_devices; i++) {
         uint64_t val_ui64; // bdfid in rocm_smi.cc
         rsmi_status_t  err = rsmi_dev_pci_id_get(i, &val_ui64);
-        //std::cout << "\t**PCI ID (BDFID): 0x" << std::hex << val_ui64 << std::endl;
+        if (err != RSMI_STATUS_SUCCESS) {
+            std::cout << "Failed to get PCI ID from ROCm-SMI." << std::endl;
+            return err;
+        }
+        uint32_t numa_node;
+        rsmi_status_t  err1 = rsmi_topo_get_numa_node_number(i, &numa_node);
+        if (err1 != RSMI_STATUS_SUCCESS) {
+            std::cout << "Failed to get NUMA node number from ROCm-SMI." << std::endl;
+            return err;
+        }
         auto domain = (val_ui64 >> 32) & 0xffff;
         auto bus = (val_ui64 >> 8) & 0xff;
         auto device = (val_ui64 >> 3) & 0x1f;
@@ -99,12 +112,31 @@ int main(int argc, char* argv[]) {
         int hipDeviceId;
         std::cout << "                " << i << "                "<< pciString << "              ";
         if (hipDeviceGetByPCIBusId(&hipDeviceId, busIdStr) != hipSuccess) {
-            std::cout << "N/A (cannot map PCI Bus ID: " << busIdStr << " to a HIP visible device)" << std::endl;
-        } else std::cout << hipDeviceId << std::endl;
+            std::cout << "N/A (cannot map PCI Bus ID: " << busIdStr << " to a HIP visible device)      "<< numa_node << std::endl;
+        } else std::cout << hipDeviceId << "                                                                      " << numa_node <<std::endl;
 
-        // pic_id = '{:04X}:{:02X}:{:02X}.{:0X}'.format(domain, bus, device, function)
-        //
-        //std::cout << domain << "; "<< bus << "; "<< device << "; "<< function << std::endl;
     }
     ret = rsmi_shut_down();
 }
+
+/*
+ We also need to use hip_rocm_smi_mapping.cpp (with HIP_API and ROCm-SMI lib) to get HIP device ids, topology information (including weight between two GPUs and NUMA node for each GPU). 
+ $rocm-smi --showtopoweight ()
+ $rocm-smi --showtoponuma ()
+ 
+ https://github.com/RadeonOpenCompute/rocm_smi_lib/blob/master/src/rocm_smi.cc#L3385
+ TODO: this script only works for ROCm systems.********************
+ 
+ rsmi_topo_get_link_weight(uint32_t dv_ind_src, uint32_t dv_ind_dst,
+                          uint64_t *weight) {
+  TRY
+
+  uint32_t dv_ind = dv_ind_src;
+  GET_DEV_AND_KFDNODE_FROM_INDX
+  DEVICE_MUTEX
+
+  if (weight == nullptr) {
+    return RSMI_STATUS_INVALID_ARGS;
+  }
+
+*/
