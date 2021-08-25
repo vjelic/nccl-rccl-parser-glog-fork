@@ -9,6 +9,7 @@ The purpose of this script is to define search space for topology-aware optimiza
 We first read "deviceIdMapping/busId_HIP_map.txt"
 
 # TODO: Read deviceIdMapping/busId_HIP_map.txt 
+# TODO: default: search space for CUDA_VISIBLE_DEVICES or HIP_VISIBLE_DEVICES
 # TODO: Iterate different sets of device grouping.
 # TODO: suggest users the most optimal setting for device grouping
 """
@@ -51,5 +52,3 @@ if __name__ == '__main__':
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log.txt --rocm --legacy-device-grouping
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --rocm
 
-CUDA_VISIBLE_DEVICES
-HIP_VISIBLE_DEVICES

@@ -301,25 +301,46 @@ def device_grouping(comm_table, conn_table):
                     outputs.append(v)  
     return outputs
 
-def generate_topo_script(commands, topo_info, busId_HIP_map, output_script):
-    filename = output_script + ".sh"
-    fs = open(filename, "w")
-    for j in range(len(commands)):
+def generate_topo_script(commands, topo_info, busId_HIP_map, output_script, perf_optim, MP, DP):
+    if perf_optim:
+        # TODO
+        filenameMP = output_script + "_MP.sh"
+        filenameDP = output_script + "_DP.sh"
+        fsMP = open(filenameMP, "w")
+        fsDP = open(filenameDP, "w")
+        fsMP.write("echo '============================== The operations for MP ==============================' \n")
+        fsDP.write("echo '============================== The operations for DP ==============================' \n")
+        for j in range(len(commands)):
+            for device_set in topo_info[j]:
+                if len(device_set) == MP:
+                    fsMP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
+                    fsMP.write("\n")
+                else:
+                    fsDP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
+                    fsDP.write("\n")
+                continue                
+        fsMP.close()
+        fsDP.close()
+        print("INFO: Dumped out the commands for MP and DP in two scripts named: {} and {}".format(filenameMP, filenameDP))
+    else:
+        filename = output_script + ".sh"
+        fs = open(filename, "w")
+        for j in range(len(commands)):
+            fs.write("echo '==========================================================' \n")
+            for device_set in topo_info[j]:
+                device_setting = "HIP_VISIBLE_DEVICES="
+                for k, device in enumerate(list(device_set)):
+                    if k == len(device_set) - 1:
+                        device_setting = device_setting + str(busId_HIP_map[device]) + " "
+                    else:                   
+                        device_setting = device_setting + str(busId_HIP_map[device]) + ","
+                fs.write(device_setting + commands[j])
+                fs.write("\n")
         fs.write("echo '==========================================================' \n")
-        for device_set in topo_info[j]:
-            device_setting = "HIP_VISIBLE_DEVICES="
-            for k, device in enumerate(list(device_set)):
-                if k == len(device_set) - 1:
-                    device_setting = device_setting + str(busId_HIP_map[device]) + " "
-                else:                   
-                    device_setting = device_setting + str(busId_HIP_map[device]) + ","
-            fs.write(device_setting + commands[j])
-            fs.write("\n")
-    fs.write("echo '==========================================================' \n")
-    fs.close()
-    print("INFO: Dumped out the commands with device assignment in a script named: {}".format(filename))
+        fs.close()
+        print("INFO: Dumped out the commands with device assignment in a script named: {}".format(filename))
 
-def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, conn_table, comm_table, legacy_device_grouping, output_name):
+def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, conn_table, comm_table, legacy_device_grouping, output_name, perf_optim, MP, DP):
     all_info = pd.merge(coll_table, comm_table, on=['comm','nranks'])
     topo_info = []
     if legacy_device_grouping:
@@ -341,7 +362,6 @@ def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, con
                 graphs.append([list(subgroup['busId'].unique()), list(subgroup['end_busid'].unique())])
             outputs = buildGraph(graphs, conn_table)
             topo_info.append(outputs)
-        generate_topo_script(command_list, topo_info, busId_HIP_map, output_name)
     else:
         device_group_list = device_grouping(comm_table, conn_table)
         for command in command_list:
@@ -352,7 +372,60 @@ def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, con
                 if len(deviceSet) == nranks:
                     temp.append(deviceSet)
             topo_info.append(temp)
-        generate_topo_script(command_list, topo_info, busId_HIP_map, output_name)
+    generate_topo_script(command_list, topo_info, busId_HIP_map, output_name, perf_optim, MP, DP)
+
+# def generate_topo_script(commands, topo_info, busId_HIP_map, output_script):
+#     filename = output_script + ".sh"
+#     fs = open(filename, "w")
+#     for j in range(len(commands)):
+#         fs.write("echo '==========================================================' \n")
+#         for device_set in topo_info[j]:
+#             device_setting = "HIP_VISIBLE_DEVICES="
+#             for k, device in enumerate(list(device_set)):
+#                 if k == len(device_set) - 1:
+#                     device_setting = device_setting + str(busId_HIP_map[device]) + " "
+#                 else:                   
+#                     device_setting = device_setting + str(busId_HIP_map[device]) + ","
+#             fs.write(device_setting + commands[j])
+#             fs.write("\n")
+#     fs.write("echo '==========================================================' \n")
+#     fs.close()
+#     print("INFO: Dumped out the commands with device assignment in a script named: {}".format(filename))
+    
+# def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, conn_table, comm_table, legacy_device_grouping, output_name):
+#     all_info = pd.merge(coll_table, comm_table, on=['comm','nranks'])
+#     topo_info = []
+#     if legacy_device_grouping:
+#         for command in raw_command_list:
+#             split_list = command.split()
+#             coll = split_list[4][:-1]
+#             opCount = int(split_list[6], 16)
+#             count = split_list[12]
+#             datatype = split_list[14]
+#             op_type = split_list[16]
+#             nranks = int(next(item for item in split_list if 'nranks' in item).split("=")[1].replace("]", ""))        
+#             #### Filter
+#             selected_info = all_info[(all_info['coll'] == coll) & (all_info['opCount'] == opCount)
+#                                     & (all_info['datatype'] == datatype) & (all_info['count'] == count) 
+#                                     & (all_info['nranks'] == nranks) & (all_info['op_type'] == op_type)] 
+#             stage_2 = pd.merge(selected_info, conn_table, left_on=['rank','busId'], right_on=['start_rank','start_busid'],how='left')
+#             graphs = []
+#             for _ , subgroup in stage_2.groupby(['busId']):
+#                 graphs.append([list(subgroup['busId'].unique()), list(subgroup['end_busid'].unique())])
+#             outputs = buildGraph(graphs, conn_table)
+#             topo_info.append(outputs)
+#         generate_topo_script(command_list, topo_info, busId_HIP_map, output_name)
+#     else:
+#         device_group_list = device_grouping(comm_table, conn_table)
+#         for command in command_list:
+#             split_list = command.split()
+#             nranks = int(split_list[split_list.index("-g") + 1])
+#             temp = []
+#             for deviceSet in device_group_list:
+#                 if len(deviceSet) == nranks:
+#                     temp.append(deviceSet)
+#             topo_info.append(temp)
+#         generate_topo_script(command_list, topo_info, busId_HIP_map, output_name)
 
 def get_commands(coll_table, unique):
     def nccl_rccl_tests_command(row):
@@ -392,21 +465,42 @@ def main():
     path_to_deviceIdMapping = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deviceIdMapping/busId_HIP_map.txt")
     if os.path.exists(path_to_deviceIdMapping) == False:
         raise AssertionError("Remember to run 'sh install.sh' before using this tool.")
-    busId_hip_map = hip_busId_mapping(path_to_deviceIdMapping)
+    busId_hip_map = hip_busId_mapping(path_to_deviceIdMapping) # TODO: this may change after we add more info.
+    
+    # Make sure the number of GPUs in a machine is greater than or equal to MP * DP
+    assert args.MP * args.DP <= busId_hip_map.shape[0] 
+    # Make sure MP * DP is consistent with the number of GPUs used in the application of the NCCL/RCCL log file
+    assert args.MP * args.DP == len(list(comm_table['busId'].unique()))
+    assert args.MP != args.DP # We cannot address the issues incurred by this case now.
+    # Can we first use MP != DP to figure out what ops belong to MP for MP = DP?
+    # For example, DeepSpeed pretrain_gpt2.py 
+    # on DGXA100 (with 16 GPUs, MP = DP = 4)
+    # [g0, g1, g2, g3], [g4, g5, g6, g7], [g8, g9, g10, g11], [g12, g13, g14, g15] ==> MP
+    # [g0, g4, g8, g12], [g1, g5, g9, g13], [g2, g6, g10, g14], [g3, g7, g11, g15] ==> DP
+    # either device assignments for MP in same hives or DP in same hives.
+    # How to impliment
+    
     if (args.unique):
         dump_counts_map(command_list, counts_list, args.output_script_name + "_counts")
+        # TODO: use "define_search_space.py" to insert device grouping information with HIP_VISIBLE_DEVICES to "net_unique_{}.csv".format(i)
+        # TODO: address the issue when MP = DP?
+        # Even current mode will fail when MP = DP since "if len(deviceSet) == nranks:"
+        # gen_cmd = "python define_search_space.py" ===> move to run_parser_and_generate_summary.py
+        # We only mark MP and DP ops here.
         generate_topo(busId_hip_map, command_list, raw_command_list, coll_table, conn_table, 
-                            comm_table, args.legacy_device_grouping, args.output_script_name + "_unique_topo")
+                      comm_table, args.legacy_device_grouping, args.output_script_name + "_unique, ", args.perf_optim, args.MP, args.DP)        
     else:
         generate_script(command_list, args.output_script_name)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--nccl-debug-log", type=str, required=True, help="RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 <executable>")
+    parser.add_argument("--MP", type=int, required=True, help="Model parallelism degree")
+    parser.add_argument("--DP", type=int, required=True, help="Data parallelism degree")
     parser.add_argument("--legacy-device-grouping", action="store_true", default=False, help="If the application is using CUDA systems or ROCm systems with RCCL 2.8 or below.") # 
-    parser.add_argument("--output-script-name", type=str, required=False, default="net_nccl_rccl", help="Output command script")
+    parser.add_argument("--output-script-name", type=str, required=False, default="net", help="Output command script")
     parser.add_argument("--unique", action="store_true", default=False, help="Get only the unique commands.")
-
+    parser.add_argument("--perf-optim", action="store_true", default=False, help="Performance optimization mode")
     args = parser.parse_args()
     main()
 

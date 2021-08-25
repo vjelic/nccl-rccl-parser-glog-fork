@@ -73,3 +73,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main()
+
+# TODO: add perf_optim mode
+#       generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
+#       refer to line 316 and line 319 in "rccl_nccl_parser.py"
