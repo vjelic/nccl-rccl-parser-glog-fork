@@ -27,7 +27,9 @@ def rccl_tests_log_processor(script_file):
 def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
     size, count_1, datatype, op_type, time_oplace, algbw_gbs_oplace, busbw_oplace, error_oplace, time_iplace, algbw_gbs_iplace, busbw_iplace, error_iplace, avg_busbw, count = [], [], [], [], [], [], [], [], [], [], [], [], [], []
     count_table = pd.read_csv(net_counts_csv)
+    time_per_op = []
     for i, row in count_table.iterrows():
+        group_max_time = float('-inf')
         for line in perf_lines[i]:
             split_list = line.split()
             size.append(split_list[0])
@@ -45,7 +47,8 @@ def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
             avg_busbw.append(split_list[-1])
             assert row['count'] % len(perf_lines[i]) == 0
             count.append(int(row['count']//len(perf_lines[i])))
-    
+            group_max_time = max(group_max_time, float(split_list[4]) * int(row['count']//len(perf_lines[i])))
+        time_per_op.append(group_max_time)
     dict_summary = {"size":size, "count_1":count_1, "datatype":datatype, 
                           "op_type":op_type, "time_oplace":time_oplace, "algbw_gbs_oplace":algbw_gbs_oplace,
                           "busbw_oplace":busbw_oplace, "error_oplace":error_oplace, "time_iplace":time_iplace,
@@ -54,15 +57,20 @@ def parse_nccl_performance(perf_lines, net_counts_csv, output_file):
     table = pd.DataFrame(dict_summary)
     table.to_csv(output_file)
     print ("INFO: Dumped out the count of each command in a file named: {}".format(output_file)) 
-    return table
+    return table, time_per_op
 
-
+def generate_summary_and_time(log_file, count_file, output_file_name):
+    log_file = os.path.abspath(log_file)
+    count_file = os.path.abspath(count_file)
+    out_file = output_file_name + ".csv"
+    results = rccl_tests_log_processor(log_file)
+    summary_table, time_per_op = parse_nccl_performance(results, count_file, out_file)
+    total_time_second = sum(time_per_op)*(1e-6) # microsecond to second
+    return total_time_second
+    
 def main():
-    log_file = os.path.abspath(args.log_file)
-    count_file = os.path.abspath(args.count_file)
-    out_file = args.output_file_name + ".csv"
-    results = rccl_tests_log_processor(log_file) # net_unique_topo.sh
-    parse_nccl_performance(results, count_file, out_file)
+    summary_table, total_time = generate_summary_and_time(args.log_file, args.count_file, args.out_file)
+    print("Total time spent = {}".format(sum(total_time)*(1e-6))) # microsecond to second
         
 
 if __name__ == '__main__':
@@ -74,6 +82,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     main()
 
-# TODO: add perf_optim mode
-#       generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
-#       refer to line 316 and line 319 in "rccl_nccl_parser.py"
+# python generate_summary.py --log-file MP_first_MP_rccl_tests.txt --count-file net_counts_MP.csv --output-file-name MP_first_MP 

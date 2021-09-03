@@ -1,8 +1,4 @@
 1. rccl_nccl_parser.py
-# TODO: add two inputs: "MP" and "DP"  assert if MP*DP != total_number_of_GPUs_detected
-# TODO: output device_groups.txt with MP and DP info (first run)
-# TODO: output net_unique.sh without topology information (device assignments)
-# TODO: net_unique.sh can be split into net_unique_DP.sh and net_unique_MP.sh
 # TODO: consider the case when MP = DP
      ==>  output: net_counts_MP.csv, net_counts_DP.csv, net_unique_DP.sh, net_unique_MP.sh, device_groups.txt (if not perf-optim mode)*
      ==>  output: net_counts.csv, net_unique.csv (when DP = MP, since we cannot know what operations are for MP or DP.)
@@ -18,26 +14,18 @@ The purpose of this script is to define search space for topology-aware optimiza
 
 
 We first read "deviceIdMapping/busId_HIP_map.txt"
-# TODO: Format device info (including HIP ids, PCI bus ids, and weights of links???)
-# TODO: Read deviceIdMapping/busId_HIP_map.txt 
-# TODO: default: search space for CUDA_VISIBLE_DEVICES or HIP_VISIBLE_DEVICES
-# TODO: Iterate different sets of device grouping.
-# TODO: suggest users the most optimal setting for device grouping
-# TODO: Decide what metric to use for rccl-tests with different device_grouping
-"""
+
 
 3. run_parser_and_generatje_summary.py       
 ===>  (mode 1) use the specified device grouping to output results 
 <workflow>:
 rccl_nccl_parser.py ("perf optim mode"=="tunning mode") --> generatje_summary.py  
-                                                     |---> device_groups.txt
-                                                     
+                                                     | ---> device_groups.txt
+                                                       
 ===>  (mode 2) use the search space defined in "define_search_space.py" to run rccl-tests/nccl-tests and find the optimal set.
 <workflow>:
 define_search_space.py --> rccl_nccl_parser.py ("perf optim mode"=="tunning mode") --> generatje_summary.py  
 
-(OK) # TODO: Check if nccl-tests/rccl-tests is already built or not. 
-# TODO: Iterate different sets of device grouping.
-# TODO: suggest users the most optimal setting for device grouping
+
 
 

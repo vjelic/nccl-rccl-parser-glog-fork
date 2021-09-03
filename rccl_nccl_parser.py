@@ -272,6 +272,18 @@ def hip_busId_mapping(path_to_deviceIdMapping):
             busId_HIP_map[processBusId(split_list[1])] = split_list[2]
     return busId_HIP_map
 
+def hip_NUMA_node_mapping(path_to_deviceIdMapping):
+    fs = open(path_to_deviceIdMapping, 'r')
+    lines = fs.readlines()
+    fs.close()
+    HIP_NUMA_node_map = {}
+    for j in range(len(lines)):
+        line = lines[j].rstrip()
+        if "=" not in line:
+            split_list = line.split()
+            HIP_NUMA_node_map[split_list[2]] = split_list[3]
+    return HIP_NUMA_node_map
+
 def device_grouping(comm_table, conn_table):
     groups = []
     for index, row in comm_table.iterrows():
@@ -303,34 +315,34 @@ def device_grouping(comm_table, conn_table):
 
 # TODO: how to feed the outputs of define_search_space.py to generate_topo_script? by device_groups.txt
 # def generate_topo_script(commands, topo_info, counts_list, busId_HIP_map, output_script, perf_optim, MP, DP):
-def generate_topo_script(commands, topo_info, counts_list, busId_HIP_map, output_script, perf_optim, MP, DP):
-    if perf_optim: # 
-        filenameMP = output_script + "_MP.sh"
-        filenameDP = output_script + "_DP.sh"
-        fsMP = open(filenameMP, "w")
-        fsDP = open(filenameDP, "w")
-        MP_command_list, DP_command_list = [], []
-        MP_counts_list, DP_counts_list = [], []
-        fsMP.write("echo '============================== The operations for MP ==============================' \n")
-        fsDP.write("echo '============================== The operations for DP ==============================' \n")
-        for j in range(len(commands)):
-            for device_set in topo_info[j]:
-                if len(device_set) == MP:
-                    fsMP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
-                    fsMP.write("\n")
-                    MP_command_list.append(commands[j])
-                    MP_counts_list.append(counts_list[j])
-                else:
-                    fsDP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
-                    fsDP.write("\n")
-                    DP_command_list.append(commands[j])
-                    DP_counts_list.append(counts_list[j])
-                continue                
-        fsMP.close()
-        fsDP.close()
-        print("INFO: Dumped out the commands for MP and DP in two scripts named: {} and {}".format(filenameMP, filenameDP))
-        dump_counts_map(MP_command_list, MP_counts_list, args.output_script_name + "_counts_MP") # TODDO
-        dump_counts_map(DP_command_list, DP_counts_list, args.output_script_name + "_counts_DP") # TODDO
+# def generate_topo_script(commands, topo_info, counts_list, busId_HIP_map, output_script, perf_optim, MP, DP):
+def generate_topo_script(commands, topo_info, counts_list, busId_HIP_map, output_script, MP, DP):
+    filenameMP = output_script + "_MP.sh"
+    filenameDP = output_script + "_DP.sh"
+    fsMP = open(filenameMP, "w")
+    fsDP = open(filenameDP, "w")
+    MP_command_list, DP_command_list = [], []
+    MP_counts_list, DP_counts_list = [], []
+    fsMP.write("echo '============================== The operations for MP ==============================' \n")
+    fsDP.write("echo '============================== The operations for DP ==============================' \n")
+    for j in range(len(commands)):
+        for device_set in topo_info[j]:
+            if len(device_set) == MP:
+                fsMP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
+                fsMP.write("\n")
+                MP_command_list.append(commands[j])
+                MP_counts_list.append(counts_list[j])
+            else:
+                fsDP.write(commands[j]) # TODO: generate_summary.py also need to be refactored. (def parse_nccl_performance(perf_lines,...)
+                fsDP.write("\n")
+                DP_command_list.append(commands[j])
+                DP_counts_list.append(counts_list[j])
+            continue                
+    fsMP.close()
+    fsDP.close()
+    print("INFO: Dumped out the commands for MP and DP in two scripts named: {} and {}".format(filenameMP, filenameDP))
+    dump_counts_map(MP_command_list, MP_counts_list, args.output_script_name + "_counts_MP") # TODDO
+    dump_counts_map(DP_command_list, DP_counts_list, args.output_script_name + "_counts_DP") # TODDO
         
         
 
@@ -402,8 +414,8 @@ def generate_topo(busId_HIP_map, command_list, raw_command_list, coll_table, con
                         else:                   
                             device_setting = device_setting + str(busId_HIP_map[device]) + ","
                     f.write("%s\n" % device_setting)
-                    
-    generate_topo_script(command_list, topo_info, counts_list, busId_HIP_map, output_name, perf_optim, MP, DP)
+    else:
+        generate_topo_script(command_list, topo_info, counts_list, busId_HIP_map, output_name, MP, DP)
     
     
     
@@ -465,11 +477,12 @@ def main():
     if os.path.exists(path_to_deviceIdMapping) == False:
         raise AssertionError("Remember to run 'sh install.sh' before using this tool.")
     busId_hip_map = hip_busId_mapping(path_to_deviceIdMapping) # TODO: this may change after we add more info.
-    
-    # Make sure the number of GPUs in a machine is greater than or equal to MP * DP
-    assert args.MP * args.DP <= len(busId_hip_map)
-    # Make sure MP * DP is consistent with the number of GPUs used in the application of the NCCL/RCCL log file
-    assert args.MP * args.DP == len(list(comm_table['busId'].unique()))
+    if args.MP != 0 and args.DP != 0:
+        # Make sure the number of GPUs in a machine is greater than or equal to MP * DP
+        assert args.MP * args.DP <= len(busId_hip_map)
+        # Make sure MP * DP is consistent with the number of GPUs used in the application of the NCCL/RCCL log file
+        assert args.MP * args.DP == len(list(comm_table['busId'].unique()))
+        
     # TODO
     # assert args.MP != args.DP # We cannot address the issues incurred by this case now.
     # Can we first use MP != DP to figure out what ops belong to MP for MP = DP?
@@ -481,7 +494,6 @@ def main():
     
     
     if (args.unique):
-        
         # TODO: use "define_search_space.py" to insert device grouping information with HIP_VISIBLE_DEVICES to "net_unique_{}.csv".format(i)
         # TODO: address the issue when MP = DP?
         # Even current mode will fail when MP = DP since "if len(deviceSet) == nranks:"
@@ -509,21 +521,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     main()
 
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log.txt --output-script-name net --unique --legacy-device-grouping
-# python rccl_nccl_parser_new.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --unique 
-
-
-# (DONE) TODO: add two inputs: "MP" and "DP"  assert if MP*DP != total_number_of_GPUs_detected
 # TODO: consider the case when MP = DP (only output net_unique_topo.sh)
-# (DONE) TODO: output device_groups.txt with MP and DP info
-# (DONE) TODO: dump_counts_map(command_list, counts_list, args.output_script_name + "_counts")  ==> split into one for MP and one for DP
-
 # python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4
 # python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --perf-optim --unique
 # python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --perf-optim --unique --legacy-device-grouping
 
-
+# python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --output-script-name net --MP 4 --DP 2 --unique
 # python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --unique
 # python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --unique --legacy-device-grouping
-python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --unique --legacy-device-grouping
+# python rccl_nccl_parser.py --nccl-debug-log gpt2_rccl_mp2.txt --output-script-name net --MP 2 --DP 4 --unique --legacy-device-grouping
