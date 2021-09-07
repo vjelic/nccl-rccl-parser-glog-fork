@@ -357,20 +357,20 @@ def main():
         
 
 if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--rocm", action="store_true", default=False, help="Run the tests on ROCm using rccl-tests")
-#     parser.add_argument("--cuda", action="store_true", default=False, help="Run the tests on CUDA using nccl-tests")
-#     parser.add_argument("--numa", action="store_true", default=False, help="Expand the search space by adding NUMA control.")
-#     parser.add_argument("--MP", type=int, required=True, help="Model parallelism degree")
-#     parser.add_argument("--DP", type=int, required=True, help="Data parallelism degree")
-#     args = parser.parse_args()
-#     if os.path.exists("/opt/rocm/bin/rocm-smi") == False:
-#         raise AssertionError("Please make sure ROCm-SMI is installed.")
-#     sys.path.append("/opt/rocm/bin")
-#     import rocm_smi
-#     from rsmiBindings import *
-#     rocm_smi.initializeRsmi()
-#     main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rocm", action="store_true", default=False, help="Run the tests on ROCm using rccl-tests")
+    parser.add_argument("--cuda", action="store_true", default=False, help="Run the tests on CUDA using nccl-tests")
+    parser.add_argument("--numa", action="store_true", default=False, help="Expand the search space by adding NUMA control.")
+    parser.add_argument("--MP", type=int, required=True, help="Model parallelism degree")
+    parser.add_argument("--DP", type=int, required=True, help="Data parallelism degree")
+    args = parser.parse_args()
+    if os.path.exists("/opt/rocm/bin/rocm-smi") == False:
+        raise AssertionError("Please make sure ROCm-SMI is installed.")
+    sys.path.append("/opt/rocm/bin")
+    import rocm_smi
+    from rsmiBindings import *
+    rocm_smi.initializeRsmi()
+    main()
     
     MP_first_MP_groups, MP_first_DP_groups, DP_first_MP_groups, DP_first_DP_groups = overall_optimization(rocm=True, numa_mode=False, MP=2, DP=4)
 
@@ -380,30 +380,3 @@ if __name__ == '__main__':
     HIP_VISIBLE_DEVICES_assignment(os.path.join(os.path.dirname(os.path.realpath(__file__)), "net_unique_DP.sh"), "MP_first_DP_command", MP_first_DP_groups)
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log.txt --rocm --legacy-device-grouping
 # python define_search_space.py --MP 2 --DP 4
-
-
-
-
-
-# def hip_busId_mapping(path_to_deviceIdMapping):
-#     def processBusId(busId):
-#         split_list = busId.split(':')
-#         temp = split_list[2].split('.')
-#         return split_list[1].lstrip('0') + temp[0] + temp[1]
-        
-#     fs = open(path_to_deviceIdMapping, 'r')
-#     lines = fs.readlines()
-#     fs.close()
-#     busId_HIP_map = {}
-#     for j in range(len(lines)):
-#         line = lines[j].rstrip()
-#         if "=" not in line:
-#             split_list = line.split()
-#             busId_HIP_map[processBusId(split_list[1])] = split_list[2]
-#     return busId_HIP_map
-
-
-# path_to_deviceIdMapping = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deviceIdMapping/busId_HIP_map.txt")
-# if os.path.exists(path_to_deviceIdMapping) == False:
-#     raise AssertionError("Remember to run 'sh install.sh' before using this tool.")
-# busId_hip_map = hip_busId_mapping(path_to_deviceIdMapping) # TODO: this may change after we add more info.

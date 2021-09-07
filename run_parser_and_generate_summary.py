@@ -2,6 +2,22 @@ import os
 import sys
 import argparse
 
+def deepSpeedDeviceOrdering(MP_group, DP_groups):
+    DeepSpeed_ordering = []
+    for MP_group in MP_groups:
+        new_MP_group = [None] * len(MP_group)
+        for dev in MP_group:
+            for i, DP_group in enumerate(DP_groups):
+                if dev in DP_group:
+                    new_MP_group[i] = dev
+                    break
+        DeepSpeed_ordering = DeepSpeed_ordering + new_MP_group
+    
+    DeepSpeedOrderingString = ""
+    for dev in DeepSpeed_ordering:
+        DeepSpeedOrderingString += str(dev) + ","
+    return DeepSpeedOrderingString[:-1]
+
 def main():
     if not args.rocm and not args.cuda:
         raise AssertionError("Please specify what system you are using (either --cuda or --rocm).")
@@ -79,14 +95,21 @@ def main():
             print("MP groups for HIP_VISIBLE_DEVICES: ", MP_first_MP_groups)
             print("DP groups for HIP_VISIBLE_DEVICES: ", MP_first_DP_groups)
             print("With the optimization strategy, the total expected time on RCCL ops is ", MP_first_MP_time + MP_first_DP_time)
+            DeepSpeedOrderingString = deepSpeedDeviceOrdering(MP_first_MP_groups, MP_first_DP_groups)
+            print("If you are using DeepSpeed for your DL applications, \
+                  please specify 'HSA_FORCE_FINE_GRAIN_PCIE=1 HIP_VISIBLE_DEVICES={} <executable>\
+                  '".format(DeepSpeedOrderingString))
+            
         else:
             print ("INFO: We recommend you to adopt DP-first optimization strategy.") 
             print("MP groups for HIP_VISIBLE_DEVICES: ", DP_first_MP_groups)
             print("DP groups for HIP_VISIBLE_DEVICES: ", DP_first_DP_groups)
-            print("With the optimization strategy, the total expected time on RCCL ops is ", DP_first_MP_time + DP_first_DP_time)
+            print("With the optimization strategy, the total expected time on RCCL ops is ", DP_first_MP_time + dP_first_DP_time)
+            print("If you are using DeepSpeed for your DL applications, \
+                  please specify 'HSA_FORCE_FINE_GRAIN_PCIE=1 HIP_VISIBLE_DEVICES={} <executable>\
+                  '".format(DeepSpeedOrderingString))
             
-        
- 
+     
 
     if args.cuda:
         nccl_tests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "nccl-tests")
@@ -111,7 +134,7 @@ def main():
         summary_cmd = "python generate_summary.py --log-file topo_rccl_tests.txt --output-file-name net_summary --count-file net_counts.csv"
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
-
+s
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--nccl-debug-log", type=str, required=True, \
@@ -128,7 +151,7 @@ if __name__ == '__main__':
     start = time.time()
     main()
     end = time.time()
-    print("INFO: Total elapsed time = {} seconds".format(end - start))
+    print("INFO: Total elapsed time of running this tool = {} seconds".format(end - start))
     
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp2.txt --MP 2 --DP 4 --perf-optim --rocm
 """
@@ -140,6 +163,8 @@ INFO: Dumped out the count of each command in a file named: DP_first_DP.csv
 INFO: We recommend you to adopt MP-first optimization strategy.
 MP groups for HIP_VISIBLE_DEVICES:  [[0, 3], [1, 2], [4, 5], [6, 7]]
 DP groups for HIP_VISIBLE_DEVICES:  [[0, 1, 5, 7], [3, 2, 4, 6]]
+If you are using DeepSpeed for your DL applications, please specify 'HIP_VISIBLE_DEVICES=0,3,1,2,5,4,7,6 <executable>'
+INFO: Total elapsed time of running this tool = 598.0428431034088 seconds
 """
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --MP 4 --DP 2 --perf-optim --rocm
 """
@@ -150,13 +175,11 @@ INFO: Dumped out the count of each command in a file named: DP_first_DP.csv
 INFO: We recommend you to adopt MP-first optimization strategy.
 MP groups for HIP_VISIBLE_DEVICES:  [[0, 1, 2, 3], [4, 5, 7, 6]]
 DP groups for HIP_VISIBLE_DEVICES:  [[0, 4], [1, 5], [2, 6], [3, 7]]
-INFO: Total elapsed time = 598.0428431034088 seconds
+If you are using DeepSpeed for your DL applications, please specify 'HSA_FORCE_FINE_GRAIN_PCIE=1 HIP_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 <executable>'
+INFO: Total elapsed time of running this tool = 598.0428431034088 seconds
 """
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log.txt --rocm --legacy-device-grouping
 # python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp4_log_newPR.txt --rocm
-
-# TODO: make a function which provides suggestions for DeepSpeed setup
-
 
 # Then, we further investigate how to implemnt this device grouping in the application level.
 # For example, DeepSpped GPT-2 pretraining:
@@ -173,3 +196,16 @@ INFO: Total elapsed time = 598.0428431034088 seconds
 #     with a total of 16 GPUs, rank 0 to 7 belong to the first box and
 #     ranks 8 to 15 belong to the second box.
 
+# ======================= ROCm System Management Interface =======================
+# =========================== Weight between two GPUs ============================
+#        GPU0         GPU1         GPU2         GPU3         GPU4         GPU5         GPU6         GPU7         
+# GPU0   0            15           30           15           72           72           72           72           
+# GPU1   15           0            15           30           72           72           72           72           
+# GPU2   30           15           0            15           72           72           72           72           
+# GPU3   15           30           15           0            72           72           72           72           
+# GPU4   72           72           72           72           0            15           15           30           
+# GPU5   72           72           72           72           15           0            30           15           
+# GPU6   72           72           72           72           15           30           0            15           
+# GPU7   72           72           72           72           30           15           15           0            
+# ============================= End of ROCm SMI Log ==============================
+# TODO: make a function which provides suggestions for DeepSpeed setup

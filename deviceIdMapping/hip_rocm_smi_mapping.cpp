@@ -119,59 +119,5 @@ int main(int argc, char* argv[]) {
             std::cout << "N/A (cannot map PCI Bus ID: " << busIdStr << " to a HIP visible device)      "<< numa_node << std::endl;
         } else std::cout << hipDeviceId << "                                                                      " << numa_node <<std::endl;
     }
-        
-    
-//     for (int i = 0; i < num_devices; i++) {
-//         std::cout << "**** ";
-//         for (int j = 0; j < num_devices; j++) {
-//             uint64_t val_ui64_i;
-//             uint64_t val_ui64_j;
-//             rsmi_status_t err_i = rsmi_dev_pci_id_get(i, &val_ui64_i);
-//             rsmi_status_t err_j = rsmi_dev_pci_id_get(j, &val_ui64_j);
-//             if (err_i != RSMI_STATUS_SUCCESS || err_j != RSMI_STATUS_SUCCESS) {
-//                 std::cout << "Failed to get PCI ID from ROCm-SMI." << std::endl;
-//                 return (err_i != RSMI_STATUS_SUCCESS) ? err_i : err_j;
-//             }
-//             std::string pciString_i = busId_int2hex(val_ui64_i);
-//             std::string pciString_j = busId_int2hex(val_ui64_j);
-//             const char* busIdStr_i = pciString_i.c_str();
-//             const char* busIdStr_j = pciString_j.c_str();
-//             int hipDeviceId_i, hipDeviceId_j;
-//             uint64_t weight;
-//             if ((hipDeviceGetByPCIBusId(&hipDeviceId_i, busIdStr_i) != hipSuccess) || 
-//                 (hipDeviceGetByPCIBusId(&hipDeviceId_j, busIdStr_j) != hipSuccess)) {
-//                 std::cout << "9999 ";
-//             } else {
-//                 rsmi_status_t err = rsmi_topo_get_link_weight(hipDeviceId_i, hipDeviceId_j, &weight);
-//                 if (err != hipSuccess) std::cout << "9999 ";
-//                 else std::cout << weight << " ";  
-//             }
-//         }
-//         std::cout << std::endl;
-//     }
     ret = rsmi_shut_down();
 }
-
-/*
- We also need to use hip_rocm_smi_mapping.cpp (with HIP_API and ROCm-SMI lib) to get HIP device ids, topology information (including weight between two GPUs and NUMA node for each GPU). 
- $rocm-smi --showtopoweight ()
- $rocm-smi --showtoponuma ()
- 
- https://github.com/RadeonOpenCompute/rocm_smi_lib/blob/master/src/rocm_smi.cc#L3385
- TODO: this script only works for ROCm systems.********************
- 
- rsmi_topo_get_link_weight(uint32_t dv_ind_src, uint32_t dv_ind_dst,
-                          uint64_t *weight) {
-  TRY
-
-  uint32_t dv_ind = dv_ind_src;
-  GET_DEV_AND_KFDNODE_FROM_INDX
-  DEVICE_MUTEX
-
-  if (weight == nullptr) {
-    return RSMI_STATUS_INVALID_ARGS;
-  }
-
-TODO: save 2D array of device links to txt.file
-
-*/

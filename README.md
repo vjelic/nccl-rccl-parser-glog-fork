@@ -59,12 +59,32 @@ Note: If you don't mention the arguments the automated script only dumps out the
 **On ROCm:**
 
 ```
-python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --rocm --legacy-device-grouping
+python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --rocm --legacy-device-grouping --MP 4 --DP 2
 ```
 
 ```
-python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_new_log.txt --rocm
+python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_new_log.txt --rocm --MP 4 --DP 2
 ```
+
+We also support the performance optimization mode on ROCm. The tool first collects the RCCL operations in your application for model parallelism (MP) and data parallelism (DP). Then, it utilizes rccl-tests as a proxy to obtain performance stats for each RCCL ops. With the topology information collected by ROCm-SMI (e.g. "rocm-smi --showtopoweight" and "rsmi_topo_get_numa_node_number"), the tool iterates over possible optimal settings of device ordering for HIP_VISIBLE_DEVICES and NUMA control (under development) in the defined search space (define_searc_space.py). Lastly, the tool suggests users the most optimal setting to run their applications.
+
+```
+python run_parser_and_generate_summary.py --nccl-debug-log gpt2_rccl_mp2.txt --MP 2 --DP 4 --perf-optim --rocm
+```
+The example outputs from the perf-optim mode are shown as below:
+```
+/topo_aware_opt/device_ordering_exp/nccl-rccl-parser-test/nccl-rccl-parser
+INFO: Dumped out the count of each command in a file named: MP_first_MP.csv
+INFO: Dumped out the count of each command in a file named: MP_first_DP.csv
+INFO: Dumped out the count of each command in a file named: DP_first_MP.csv
+INFO: Dumped out the count of each command in a file named: DP_first_DP.csv
+INFO: We recommend you to adopt MP-first optimization strategy.
+MP groups for HIP_VISIBLE_DEVICES:  [[0, 3], [1, 2], [4, 5], [6, 7]]
+DP groups for HIP_VISIBLE_DEVICES:  [[0, 1, 5, 7], [3, 2, 4, 6]]
+If you are using DeepSpeed for your DL applications, please specify 'HIP_VISIBLE_DEVICES=0,3,1,2,5,4,7,6 <executable>'
+INFO: Total elapsed time of running this tool = 598.0428431034088 seconds
+```
+
 
 **On CUDA:**
 
