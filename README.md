@@ -13,7 +13,7 @@ To run the tests, we use the following repositories:
 * RCCL/NCCL installed. 
 * Clone this repo with 
   ```
-  git clone --recursive https://github.com/ROCmSoftwarePlatform/nccl-rccl-parser.git
+  git clone --recursive https://github.com/ROCmSoftwarePlatform/nccl-rccl-parser.git -b topo-optim
   ```
 * Run installation script by 
   ```
