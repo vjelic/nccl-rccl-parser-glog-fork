@@ -13,7 +13,7 @@ To run the tests, we use the following repositories:
 * RCCL/NCCL installed. 
 * Clone this repo with 
   ```
-  git clone --recursive https://github.com/lcskrishna/nccl-rccl-parser.git
+  git clone --recursive https://github.com/ROCmSoftwarePlatform/nccl-rccl-parser.git -b topology_hubert
   ```
 * Run installation script by 
   ```
