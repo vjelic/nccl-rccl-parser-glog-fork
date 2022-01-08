@@ -4,7 +4,8 @@ import argparse
 
 def main():
     debug_log = os.path.abspath(args.nccl_debug_log)
-    
+
+    ##### Firstly call rccl_nccl_parser.py to parse the ......log.txt file
     ## Generate a script to run nccl/rccl tests.
     gen_cmd = "python rccl_nccl_parser.py --nccl-debug-log " + debug_log + " --output-script-name net --unique"
     if os.system(gen_cmd):
@@ -15,7 +16,6 @@ def main():
     if args.rocm:
         rccl_tests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "rccl-tests")
         os.system("cp net_unique.sh " + rccl_tests_path)
-        #os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "rccl-tests"))
         os.chdir(rccl_tests_path)
         if os.system("./install.sh > /dev/null 2>&1"):
             print("ERROR: Failed to install rccl-tests.")
@@ -30,7 +30,7 @@ def main():
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
         print (os.getcwd())
-        summary_cmd = "python generate_summary.py --log-file rccl_perf_log.txt --script-file net_unique.sh --count-file net_counts.csv"
+        summary_cmd = "python generate_summary_patched.py --log-file rccl_perf_log.txt --script-file net_unique.sh --count-file net_counts.csv"
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
 
