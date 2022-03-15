@@ -360,7 +360,7 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                 if busId not in busIds:
                      busIds.append(busId)
                 if op not in func_name:
-                     func_name[op] = split_list[11] # only work for KL
+                     func_name[op] = split_list[split_list.index("KL") + 3] # only work for KL
                         
             ####### Kernel End #######
             elif 'KE' in line:
@@ -448,11 +448,20 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     bw.append(algobw_factor_times_size / temp[k + 2] /1e9)    ## IndexError: list index out of range
                 
                 bw = bw + [data_size, algobw_factor_times_size/(time_end - time_start)/1e9]
+                
+                # temp = [opCount, Function Name, GPU0, GPU1, ...,]
+                temp.append(max(temp[2:2+len(group)]) - min(temp[2:2+len(group)])) 
+                # Latest- Fatest, (Latest- Fatest)/avg, 
+                # data_size
+                # print(len(temp), "==="*10) # 2 + 8 + 1
+                latest_earliest_percentage = temp[2+len(group)] / (sum(temp[2:2+len(group)])/len(group))*100
+                temp.append(latest_earliest_percentage)
                 temp.append(data_size)
                 time_list.append(temp)
                 bw_list.append(bw)
                 
-        time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['data_size']).sort_values(by=['opCount'])
+        # time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['data_size']).sort_values(by=['opCount'])
+        time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['Latest - Earlist'] + ['Latest - earlist %'] + ['data_size']).sort_values(by=['opCount'])
         bw_table = pd.DataFrame(bw_list, columns = ['opCount', 'Function Name'] + group + ['data_size', 'algBW']).sort_values(by=['opCount'])
         time_tables.append(time_table)
         bw_tables.append(bw_table)
