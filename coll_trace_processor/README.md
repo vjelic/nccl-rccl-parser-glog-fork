@@ -25,11 +25,11 @@ NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 <exe
 ```
 Example command lines:
 ```shell
-python log_processor.py --rccl-debug-log rccl_log.txt
+python rccl_trace_processor.py --rccl-debug-log rccl_log.txt
 ```
 Notice that since RCCL 2.8 or below has no sufficient inforamtion for device grouping, "--legacy" flag needs to be specified and the number of devices used in the application is also required.
 ```shell
-python log_processor.py --rccl-debug-log rccl_2.8.log --legacy --num_devices 8
+python rccl_trace_processor.py --rccl-debug-log rccl_2.8.log --legacy --num_devices 8
 ```
 
 ## Example Output
