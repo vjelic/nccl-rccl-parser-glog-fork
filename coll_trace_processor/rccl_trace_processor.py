@@ -32,6 +32,7 @@ import argparse
 import pkg_resources
 import re
 import time
+import numpy as np
 
 coll_op_map = {
             "Broadcast": "broadcast_perf",
@@ -66,7 +67,7 @@ data_types_map = {
                 "7" : "float",
                 "8" : "double",
                 "9" : "bf16",
-                #"10" : "ncclNumTypes Equivalent?"
+                "10" : "ncclNumTypes"
              }
 
 data_type_bytes_map = {
@@ -186,7 +187,8 @@ def coll_table_build(coll_lines):
     for line in coll_lines:
         split_list = line.split(" ")
         coll.append(split_list[split_list.index("opCount") - 1][:-1])
-        opCount.append(int(split_list[split_list.index("opCount") + 1], 16))
+        # Store opCount in string
+        opCount.append(split_list[split_list.index("opCount") + 1])
         count.append(split_list[split_list.index("count") + 1])
         datatype.append(split_list[split_list.index("datatype") + 1])
         op_type.append(split_list[split_list.index("op") + 1])
@@ -334,17 +336,23 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
             split_list = line.split(" ")
             
             if "KL HWID" in line:
-                op = int(split_list[split_list.index("KL") - 1], 16)
+                op = str(split_list[split_list.index("KL") - 1].lstrip('0'))
+                if op == "":
+                    op = "0"
             elif "KE" in line:
-                op = int(split_list[split_list.index("KE") - 1], 16)
+                op = str(split_list[split_list.index("KE") - 1].lstrip('0'))
+                if op == "":
+                    op = "0"
             else:
-                op = int(split_list[split_list.index("CE") - 1], 16)
+                op = str(split_list[split_list.index("CE") - 1].lstrip('0'))
+                if op == "":
+                    op = "0"
 
-            if op not in opCount_list: ###############################
+            if op not in opCount_list:
                 continue
             ####### Kernel Launch #######
             if 'KL' in line:
-                t = float(process_string(split_list[split_list.index("KL") - 3])) # seconds.microseconds
+                t = np.float64(process_string(split_list[split_list.index("KL") - 3])) # seconds.microseconds
                 rk, blk = process_string(split_list[split_list.index("KL") - 2]).split(":") # rank:block_id
                 if "busId" in split_list:
                     busId = split_list[split_list.index("busId") + 1]
@@ -355,6 +363,7 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     busId = int(rk)
                     RCCL_2_8 = True
                     KL_key = str(op) + "," + str(busId) + ",t0"
+
                 if KL_key not in results or results[KL_key] > t:
                     results[KL_key] = t
                 if busId not in busIds:
@@ -364,7 +373,7 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                         
             ####### Kernel End #######
             elif 'KE' in line:
-                t = float(process_string(split_list[split_list.index("KE") - 3])) # seconds.microseconds
+                t = np.float64(process_string(split_list[split_list.index("KE") - 3])) # seconds.microseconds
                 rk, blk = process_string(split_list[split_list.index("KE") - 2]).split(":") # rank:block_id
                 if "busId" in split_list:
                     busId = split_list[split_list.index("busId") + 1]
@@ -380,7 +389,7 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                     
                     
             elif 'CE' in line:
-                t = float(process_string(split_list[split_list.index("CE") - 3])) # seconds.microseconds
+                t = np.float64(process_string(split_list[split_list.index("CE") - 3])) # seconds.microseconds
                 rk, blk = process_string(split_list[split_list.index("CE") - 2]).split(":") # rank:block_id
                 if "busId" in split_list:
                     busId = split_list[split_list.index("busId") + 1]
@@ -405,7 +414,8 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
         bw_list, time_list = [], []
         for op in func_name:
             found = False
-            time_start, time_end = 1e9, 0
+            time_start, time_end = np.float64(1e9), np.float64(0)
+
             if RCCL_2_8:
                 for busId in range(len(group)):
                     key = str(op) + "," + str(busId)
@@ -420,7 +430,6 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                             time_start = t_start
                         if t_end > time_end:
                             time_end = t_end
-                        
             else:
                 for busId in group:
                     key = str(op) + "," + str(busId) + "," + str(len(group))
@@ -447,21 +456,21 @@ def coll_trace_processor(coll_trace_lines, group_list, coll_table):
                 for k in range(len(group)):
                     bw.append(algobw_factor_times_size / temp[k + 2] /1e9)    ## IndexError: list index out of range
                 
-                bw = bw + [data_size, algobw_factor_times_size/(time_end - time_start)/1e9]
+                # time_end
+                for busId in group:
+                    time_end
+                bw = bw + [data_size, data_size/(time_end - time_start)/1e9]
                 
                 # temp = [opCount, Function Name, GPU0, GPU1, ...,]
-                temp.append(max(temp[2:2+len(group)]) - min(temp[2:2+len(group)])) 
-                # Latest- Fatest, (Latest- Fatest)/avg, 
-                # data_size
-                # print(len(temp), "==="*10) # 2 + 8 + 1
-                latest_earliest_percentage = temp[2+len(group)] / (sum(temp[2:2+len(group)])/len(group))*100
-                temp.append(latest_earliest_percentage)
+                busbw_per_op_worst = algobw_factor_times_size/max(temp[2:2+len(group)])/1e9 
+                busbw_per_op_best = algobw_factor_times_size/min(temp[2:2+len(group)])/1e9
+                temp.append(busbw_per_op_worst)
+                temp.append(busbw_per_op_best)
                 temp.append(data_size)
                 time_list.append(temp)
                 bw_list.append(bw)
                 
-        # time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['data_size']).sort_values(by=['opCount'])
-        time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['Latest - Earlist'] + ['Latest - earlist %'] + ['data_size']).sort_values(by=['opCount'])
+        time_table = pd.DataFrame(time_list, columns = ['opCount', 'Function Name'] + group + ['busBW_worst'] + ['busBW_best'] + ['datasize']).sort_values(by=['opCount'])
         bw_table = pd.DataFrame(bw_list, columns = ['opCount', 'Function Name'] + group + ['data_size', 'algBW']).sort_values(by=['opCount'])
         time_tables.append(time_table)
         bw_tables.append(bw_table)
@@ -503,7 +512,6 @@ def rccl_log_process():
     else:
         device_grouping_output = os.path.join(os.path.dirname(os.path.realpath(__file__)), "device_groups.txt")
         coll_table, conn_table, comm_table, ring_table, tree_table, coll_trace_lines = create_table(debug_log)
-        ####### TODO ########
         assert len(coll_trace_lines) != 0, "Please run your application with RCCL with the environment variable of \"RCCL_KERNEL_COLL_TRACE_ENABLE=1\""
         device_group_list = device_grouping(comm_table, conn_table)
         with open(device_grouping_output, 'w') as f:
@@ -515,16 +523,16 @@ def rccl_log_process():
     for i, (time_table, bw_table) in enumerate(zip(time_tables, bw_tables)):
         time_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), "time_{}.csv".format(i))
         bw_csv = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bw_{}.csv".format(i))
-        time_table.to_csv(time_csv)
-        bw_table.to_csv(bw_csv)
+        time_table.to_csv(time_csv, float_format='%.6f')
+        bw_table.to_csv(bw_csv, float_format='%.6f')
         
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--rccl-debug-log", type=str, required=True, \
                             help="RCCL log after running app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL RCCL_KERNEL_COLL_TRACE_ENABLE=1 executable")
-    parser.add_argument("--legacy", action="store_true", default=False, help="If the application is using ROCm systems with RCCL 2.8 or below, the topology visualizer will not be enabled.") # 
-    parser.add_argument('--num_devices', type=int, default=1, help="If the application is using ROCm systems with RCCL 2.8 or below, the number of devices needs to be specified.") #
+    parser.add_argument("--legacy", action="store_true", default=False, help="If the application is using ROCm systems with RCCL 2.8 or below, the topology visualizer will not be enabled.")
+    parser.add_argument('--num_devices', type=int, default=1, help="If the application is using ROCm systems with RCCL 2.8 or below, the number of devices needs to be specified.")
     args = parser.parse_args()
     #### Requirement check #### 
     required = {'pandas'}
