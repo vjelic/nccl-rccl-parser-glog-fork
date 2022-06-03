@@ -30,7 +30,7 @@ def main():
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
         print (os.getcwd())
-        summary_cmd = "python generate_summary_patched.py --log-file rccl_perf_log.txt --script-file net_unique.sh --count-file net_counts.csv"
+        summary_cmd = "python generate_summary.py --log-file rccl_perf_log.txt --script-file net_unique.sh --count-file net_counts.csv"
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
 

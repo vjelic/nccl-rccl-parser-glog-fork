@@ -23,11 +23,11 @@ Make sure to run the application for at least 1 iteration using the below two en
 
 **On CUDA:**
 ```
-NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt
+NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application/executable> |& tee nccl_debug_log.txt
 ```
 **On ROCm:** (needed for PCIe P2P but not needed for GPUs connected by XGMI, [ref](https://github.com/ROCmSoftwarePlatform/rccl/issues/92#issuecomment-540696989))
 ```
-HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application> |& tee nccl_debug_log.txt
+HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application/executable> |& tee nccl_debug_log.txt
 ```
 
 
