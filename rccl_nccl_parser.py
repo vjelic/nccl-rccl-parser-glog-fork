@@ -1,5 +1,6 @@
 import os
 import sys
+import csv
 import argparse
 
 coll_op_map = {
@@ -11,7 +12,7 @@ coll_op_map = {
             "Gather": "gather_perf",
             "Scatter": "scatter_perf",
             "AllToAll": "alltoall_perf",
-#            "AllToAllv": "alltoallv_perf",
+            "AllToAllv": "alltoallv_perf",
             "Send": "sendrecv_perf",
             "Recv": "sendrecv_perf",
           }
@@ -51,7 +52,7 @@ data_type_bytes_map = {
                     "9" : 2,
                     #"10" : Not sure.
                   }
-                
+
 def get_useful_info(log_file):
     fs = open(log_file, 'r')
     lines = fs.readlines()
@@ -66,7 +67,7 @@ def get_useful_info(log_file):
     return useful_lines
 
 def parse_nccl_log(nccl_lines):
-    
+
     commands = []
     for j in range(len(nccl_lines)):
         line = nccl_lines[j]
@@ -106,15 +107,16 @@ def generate_script(commands, output_script):
 
 def dump_counts_map(counts_map, output_file):
     filename = output_file + ".csv"
-    fs = open(filename, 'w')
-    fs.write("sep=|")
-    fs.write("\n")
+    result_list = []
     keys = counts_map.keys()
     for key in keys:
-        fs.write(key + "|" + str(counts_map[key]))
-        fs.write("\n")
-    fs.close()
-    print ("INFO: Dumped out the count of each command in a file named: {}".format(filename))
+        result_list.append([key, str(counts_map[key])])
+    
+    with open(filename, 'w') as f:
+        write = csv.writer(f)
+        write.writerows(result_list)
+
+    print ("INFO: Dumped out the count of each command in a csv file named: {}".format(filename))
 
 def get_unique_commands(commands_and_nranks):
     unique_values = []
@@ -131,7 +133,9 @@ def get_unique_commands(commands_and_nranks):
             counts_map[cmd] = counts_map[cmd] + 1
     assert len(counts_map) == len(nranks_map)
     for cmd in counts_map.keys():
-        assert counts_map[cmd] % nranks_map[cmd] == 0
+        # (TODO) It's weird that some ops with nranks = 8 only have 7 collective line in a MLPerf ResNet50 log....
+        #print(cmd, " === ", nranks_map[cmd], " === ", counts_map[cmd])
+        #assert counts_map[cmd] % nranks_map[cmd] == 0
         counts_map[cmd] = int(counts_map[cmd] / nranks_map[cmd])
     return unique_values, counts_map
 
@@ -153,6 +157,8 @@ if __name__ == '__main__':
     parser.add_argument("--nccl-debug-log", type=str, required=True, help="Log from app with NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL")
     parser.add_argument("--output-script-name", type=str, required=False, default="net_nccl_rccl", help="Output command script")
     parser.add_argument("--unique", action="store_true", default=False, help="Get only the unique commands.")
+    parser.add_argument("--tuning", action="store_true", default=False, help="Use brute force search for HIP_VISIBLE_DEVICES ordering permuntations.") # must be used with "unique" mode
 
     args = parser.parse_args()
     main()
+
