@@ -11,7 +11,7 @@ coll_op_map = {
             "Gather": "gather_perf",
             "Scatter": "scatter_perf",
             "AllToAll": "alltoall_perf",
-#            "AllToAllv": "alltoallv_perf",
+            "AllToAllv": "alltoallv_perf",
             "Send": "sendrecv_perf",
             "Recv": "sendrecv_perf",
           }
