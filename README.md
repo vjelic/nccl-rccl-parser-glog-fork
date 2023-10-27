@@ -29,6 +29,11 @@ NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application/executable> |& tee nccl
 ```
 HSA_FORCE_FINE_GRAIN_PCIE=1 NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL <application/executable> |& tee nccl_debug_log.txt
 ```
+**NOTE:**
+For some workloads buffered output can impact the RCCL/NCCL log format which may break the parser. The following env variable can help with this 
+```
+PYTHONBUFFERED=x stdbuf -i0 -o0 -e0
+```
 
 
 ### Automated way:
