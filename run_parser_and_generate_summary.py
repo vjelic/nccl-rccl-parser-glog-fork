@@ -17,7 +17,7 @@ def main():
         rccl_tests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "rccl-tests")
         os.system("cp net_unique.sh " + rccl_tests_path)
         os.chdir(rccl_tests_path)
-        if os.system("./install.sh > /dev/null 2>&1"):
+        if os.system("./install.sh --rccl_home=/opt/rocm  2>&1"):
             print("ERROR: Failed to install rccl-tests.")
             sys.exit(1)
         
@@ -27,7 +27,7 @@ def main():
             print ("ERROR: Unable to run rccl-tests properly.")
             sys.exit(1)
         os.system("mv rccl_perf_log.txt ../")
-        os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
+        os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__))))
 
         print (os.getcwd())
         summary_cmd = "python generate_summary.py --log-file rccl_perf_log.txt --script-file net_unique.sh --count-file net_counts.csv"
