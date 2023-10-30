@@ -48,7 +48,7 @@ def main():
             print ("ERROR: unable to run nccl-tests")
             sys.exit(1)
         os.system("mv nccl_perf_log.txt ../")
-        os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
+        os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__))))
         
         summary_cmd = "python generate_summary.py --log-file nccl_perf_log.txt --script-file net_unique.sh --output-file-name nv_net_summary --count-file net_counts.csv"
         os.system(summary_cmd)

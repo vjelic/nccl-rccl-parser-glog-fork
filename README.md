@@ -16,6 +16,17 @@ To run the tests, we use the following repositories:
 
 # How to use the tool:
 
+### Easy mode: one bash script:
+Ensure a RUN_COMMAND has been set, this can be any executable or bash script.
+
+**Usage on ROCm:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" --use-rocm
+
+**Usage on CUDA:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" 
+
+This will collect the logs from your program automatically and dump out the final csv report.
+
 ### Run application and collect RCCL/NCCL Log:**
 
 Firstly, make sure you are running the experiments of a distributed setup of an application.
@@ -34,7 +45,6 @@ For some workloads buffered output can impact the RCCL/NCCL log format which may
 ```
 PYTHONBUFFERED=x stdbuf -i0 -o0 -e0
 ```
-
 
 ### Automated way:
 
@@ -57,6 +67,18 @@ python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --
 ```
 python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --cuda
 ```
+
+### Easy mode: one bash script:
+Ensure a RUN_COMMAND has been set, this can be any executable or bash script.
+
+**Usage on ROCm:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" --use-rocm
+
+**Usage on CUDA:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" 
+
+This will collect the logs from your program automatically and dump out the final csv report.
+
 ### To run the tool manually step by step:
 
 **Use Parser to dump out the test commands:**
