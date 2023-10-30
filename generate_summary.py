@@ -51,14 +51,19 @@ def parse_nccl_performance(useful_lines, commands):
         for i in range(len(split_list)):
             perf_line = perf_line + split_list[i] + "|"
             # Some collectives do not involve a redop
-            if field_index==2 and "reduce" not in commands[j].lower():
+            if (
+                field_index==2 and 
+                "reduce" not in commands[j].lower() and 
+                "none" not in split_list[3] # CUDA will always have redop but set to none if not used
+            ):
                 perf_line = perf_line + "|"
                 field_index = field_index + 1
             # Only broadcast and reduce involve a root
             if (
                field_index==3 and
                re.search(r'\Wreduce_perf', commands[j]) is None and
-               re.search(r'\Wbroadcast_perf', commands[j]) is None
+               re.search(r'\Wbroadcast_perf', commands[j]) is None and
+               "-1" not in split_list[4] # CUDA will always have a root but set to none if not used
             ):
                 perf_line = perf_line + "|"
                 field_index = field_index + 1

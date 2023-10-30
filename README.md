@@ -57,6 +57,18 @@ python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --
 ```
 python run_parser_and_generate_summary.py --nccl-debug-log nccl_debug_log.txt --cuda
 ```
+
+### Easy mode: one bash script:
+Ensure a RUN_COMMAND has been set, this can be any executable or bash script.
+
+**Usage on ROCm:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" --use-rocm
+
+**Usage on CUDA:**
+bash automated_parser.sh --run-command "{RUN_COMMAND}" 
+
+This will collect the logs from your program automatically and dump out the final csv report.
+
 ### To run the tool manually step by step:
 
 **Use Parser to dump out the test commands:**
