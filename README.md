@@ -35,6 +35,7 @@ For some workloads buffered output can impact the RCCL/NCCL log format which may
 PYTHONBUFFERED=x stdbuf -i0 -o0 -e0
 ```
 
+
 ### Automated way:
 
 To gather the performance results once you have the debug log with you. Run the below command. 
