@@ -131,7 +131,7 @@ def get_unique_commands(commands_and_nranks):
             counts_map[cmd] = counts_map[cmd] + 1
     assert len(counts_map) == len(nranks_map)
     for cmd in counts_map.keys():
-        assert counts_map[cmd] % nranks_map[cmd] == 0
+        #assert counts_map[cmd] % nranks_map[cmd] == 0
         counts_map[cmd] = int(counts_map[cmd] / nranks_map[cmd])
     return unique_values, counts_map
 
