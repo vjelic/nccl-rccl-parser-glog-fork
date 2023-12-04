@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Argument parsing
 while [[ "$#" -gt 0 ]]; do
@@ -43,7 +43,7 @@ cp test_commands_unique.sh ${TEST_DIR}
 cd ${TEST_DIR} && sh test_commands_unique.sh |& tee nccl_perf_data.txt && cd ..
 
 # Generate summary
-python generate_summary.py --log-file ${TEST_DIR}/nccl_perf_data.txt --output-file-name nccl_summary_data --script-file ${TEST_DIR}/test_commands_unique.sh 
+python generate_summary.py --log-file ${TEST_DIR}/nccl_perf_data.txt --output-file-name nccl_summary_data --script-file ${TEST_DIR}/test_commands_unique.sh
 echo "Performance data dumped to nccl-rccl-parser/nccl_summary_data"
 
 sed -i 's/|/,/g' nccl_summary_data.csv

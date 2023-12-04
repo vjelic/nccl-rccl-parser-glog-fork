@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import argparse
@@ -51,7 +53,7 @@ data_type_bytes_map = {
                     "9" : 2,
                     #"10" : Not sure.
                   }
-                
+
 def get_useful_info(log_file):
     fs = open(log_file, 'r')
     lines = fs.readlines()
@@ -66,7 +68,7 @@ def get_useful_info(log_file):
     return useful_lines
 
 def parse_nccl_log(nccl_lines):
-    
+
     commands = []
     for j in range(len(nccl_lines)):
         line = nccl_lines[j]

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import argparse
@@ -33,7 +35,7 @@ def parse_useful_information(log_file):
     return useful_lines
 
 def parse_nccl_performance(useful_lines, commands):
-    
+
     perf_lines = []
     perf_lines.append("sep=|")
     header = "size|count|type|redop|root|time-oplace(us)|algbw(gb/s)-oplace|busbw(gb/s)-oplace|error|" + \
@@ -44,7 +46,7 @@ def parse_nccl_performance(useful_lines, commands):
     for j in range(len(useful_lines)):
         line = useful_lines[j]
         line = line.replace("# Avg bus bandwidth    : ", "")
-        
+
         split_list = line.split()
         perf_line = ""
         field_index = 0
@@ -52,8 +54,8 @@ def parse_nccl_performance(useful_lines, commands):
             perf_line = perf_line + split_list[i] + "|"
             # Some collectives do not involve a redop
             if (
-                field_index==2 and 
-                "reduce" not in commands[j].lower() and 
+                field_index==2 and
+                "reduce" not in commands[j].lower() and
                 "none" not in split_list[3] # CUDA will always have redop but set to none if not used
             ):
                 perf_line = perf_line + "|"

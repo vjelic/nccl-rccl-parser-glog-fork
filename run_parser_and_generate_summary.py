@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import argparse
@@ -11,7 +13,7 @@ def main():
     if os.system(gen_cmd):
         print ("ERROR: Failed to parse the log.")
         sys.exit(1)
-      
+
     ## change directory to rccl-tests/nccl-tests
     if args.rocm:
         rccl_tests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "rccl-tests")
@@ -20,7 +22,7 @@ def main():
         if os.system("./install.sh --rccl_home=/opt/rocm  2>&1"):
             print("ERROR: Failed to install rccl-tests.")
             sys.exit(1)
-        
+
         os.system("cat net_unique.sh")
         run_script_cmd = "HSA_FORCE_FINE_GRAIN_PCIE=1 sh net_unique.sh | tee rccl_perf_log.txt"
         if os.system(run_script_cmd):
@@ -41,7 +43,7 @@ def main():
         if os.system("make > /dev/null 2>&1"):
             print ("ERROR: Failed to install nccl-unit tests")
             sys.exit(1)
-        
+
         os.system("cat net_unique.sh")
         run_script_cmd = "sh net_unique.sh | tee nccl_perf_log.txt"
         if os.system(run_script_cmd):
@@ -49,7 +51,7 @@ def main():
             sys.exit(1)
         os.system("mv nccl_perf_log.txt ../")
         os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__))))
-        
+
         summary_cmd = "python generate_summary.py --log-file nccl_perf_log.txt --script-file net_unique.sh --output-file-name nv_net_summary --count-file net_counts.csv"
         os.system(summary_cmd)
         print ("INFO: Finished dumping all data.")
