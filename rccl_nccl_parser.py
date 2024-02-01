@@ -87,7 +87,7 @@ def parse_nccl_log(nccl_lines):
 
         total_bytes = int(count) * data_type_bytes_map[datatype]
 
-        test_cmd = "./build/" + coll_op_map[comm] + " -d " + data_types_map[datatype] + \
+        test_cmd = "./build/" + coll_op_map[comm.replace("mscclFunc", "")] + " -d " + data_types_map[datatype] + \
                        " -b " + str(total_bytes) + " -e " + str(total_bytes) + \
                        " -o " + reduction_op_map[op_type] + " -g " + str(nnranks)
         #print (test_cmd)
